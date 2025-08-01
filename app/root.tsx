@@ -23,7 +23,7 @@ export async function loader({
   if (!session.has("user")) {
 
     // Allow access to the login page even if not authenticated
-    if (url.pathname === "/login") {
+    if (url.pathname === "/login" || url.pathname === "/register") {
       return null;
     }
 

@@ -5,5 +5,6 @@ export default [
   route("games/create", "routes/create-game.tsx"),
   route("games/:gameId", "routes/game-details.tsx"),
   route("login", "routes/login.tsx"),
+  route("register", "routes/register.tsx"),
   route("logout", "routes/logout.tsx"),
 ] satisfies RouteConfig;

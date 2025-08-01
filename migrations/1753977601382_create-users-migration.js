@@ -9,6 +9,7 @@ export const up = (pgm) => {
         username: {
             type: 'text',
             notNull: true,
+            unique: true,
         },
         password: {
             type: 'text',

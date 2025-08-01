@@ -1,0 +1,7 @@
+www.futebolada.org {
+    redir https://futebolada.org{uri} permanent
+}
+
+futebolada.org {
+  reverse_proxy app:3000
+}
