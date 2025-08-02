@@ -7,7 +7,8 @@ export type Game = {
   date: string;
   startTime: string;
   endTime: string;
-  location: string;
+  latitude: number;
+  longitude: number;
   maxPlayers: number;
   enrolledPlayers: User[];
 };
@@ -19,7 +20,8 @@ export async function getAllGames(): Promise<Game[]> {
       to_char(g.date, 'YYYY-MM-DD') AS date,
       g.start_time AS "startTime",
       g.end_time AS "endTime",
-      g.location,
+      g.latitude,
+      g.longitude,
       g.max_players AS "maxPlayers",
       g.created_at,
       g.updated_at,
@@ -27,9 +29,10 @@ export async function getAllGames(): Promise<Game[]> {
         json_agg(
           jsonb_build_object(
             'id', u.id,
-            'username', u.username
+            'email', u.email,
+            'name', u.name
           )
-          ORDER BY u.username
+          ORDER BY u.email
         ) FILTER (WHERE u.id IS NOT NULL),
         '[]'
       ) AS "enrolledPlayers"
@@ -51,7 +54,8 @@ export async function getGame(id: String): Promise<Game> {
       to_char(g.date, 'YYYY-MM-DD') AS date,
       g.start_time AS "startTime",
       g.end_time AS "endTime",
-      g.location,
+      g.latitude,
+      g.longitude,
       g.max_players AS "maxPlayers",
       g.created_at,
       g.updated_at,
@@ -59,9 +63,10 @@ export async function getGame(id: String): Promise<Game> {
         json_agg(
           jsonb_build_object(
             'id', u.id,
-            'username', u.username
+            'email', u.email,
+            'name', u.name
           )
-          ORDER BY u.username
+          ORDER BY u.email
         ) FILTER (WHERE u.id IS NOT NULL),
         '[]'
       ) AS "enrolledPlayers"
@@ -82,42 +87,99 @@ export async function createGame({
   date,
                                    startTime,
   endTime,
-                                   location,
+                                   latitude,
+  longitude,
                                    maxPlayers,
                                  }: {
   date: string;
   startTime: string;
   endTime: string;
-  location: string;
+  latitude: number;
+  longitude: number;
   maxPlayers: number;
 }): Promise<Game> {
   const id = uuidv4();
 
   const result = await pool.query<Game>(
     `
-    INSERT INTO games (id, date, start_time, end_time, location, max_players)
-    VALUES ($1, $2, $3, $4, $5, $6)
-    RETURNING id, date, start_time as "startTime", end_time as "endTime", location, max_players as "maxPlayers"
+    INSERT INTO games (id, date, start_time, end_time, latitude, longitude, max_players)
+    VALUES ($1, $2, $3, $4, $5, $6, $7)
+    RETURNING id, date, start_time as "startTime", end_time as "endTime", latitude, longitude, max_players as "maxPlayers"
   `,
-    [id, date, startTime, endTime, location, maxPlayers]
+    [id, date, startTime, endTime, latitude, longitude, maxPlayers]
   );
 
   return result.rows[0];
 }
 
-interface enrollInGameProps {
+interface enrollInGameInput {
   gameId: string,
   userId: string,
 }
-export async function enrollInGame(props: enrollInGameProps): Promise<void> {
-  const id = uuidv4();
 
-  await pool.query<Game>(
+export async function enrollInGame(input: enrollInGameInput): Promise<void> {
+  const client = await pool.connect();
+
+  try {
+    await client.query("BEGIN");
+
+    // Get maxPlayers and current count
+    const { rows: [game] } = await client.query(
+      `
+      SELECT max_players AS "maxPlayers"
+      FROM games
+      WHERE id = $1
+      `,
+      [input.gameId]
+    );
+
+    if (!game) {
+      throw new Error("Game not found");
+    }
+
+    const { rows: [count] } = await client.query(
+      `
+      SELECT COUNT(*)::int AS "enrolledCount"
+      FROM game_players
+      WHERE game_id = $1
+      `,
+      [input.gameId]
+    );
+
+    if (count.enrolledCount >= game.maxPlayers) {
+      throw new Error("Game is full");
+    }
+
+    const id = uuidv4();
+    await client.query(
+      `
+      INSERT INTO game_players (id, game_id, user_id)
+      VALUES ($1, $2, $3)
+      `,
+      [id, input.gameId, input.userId]
+    );
+
+    await client.query("COMMIT");
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+interface unenrollFromGameInput {
+  gameId: string,
+  userId: string,
+}
+
+export async function unenrollFromGame(input: unenrollFromGameInput): Promise<void> {
+  await pool.query(
     `
-    INSERT INTO game_players (id, game_id, user_id)
-    VALUES ($1, $2, $3)
-    RETURNING id, game_id as "gameId", user_id as "userId", team
+    DELETE FROM game_players
+    WHERE game_id = $1 AND user_id = $2
   `,
-    [id, props.gameId, props.userId]
+    [input.gameId, input.userId]
   );
 }
+

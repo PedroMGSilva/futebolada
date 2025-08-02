@@ -4,41 +4,49 @@ import {v4 as uuidv4} from "uuid";
 
 export type User = {
   id: string;
-  username: string;
+  email: string;
+  name: string;
 };
 
 
 interface Credentials {
-  username: string;
+  email: string;
   password: string;
 }
 
 export async function validateCredentials(credentials: Credentials): Promise<User> {
-  const { username, password } = credentials;
+  const { email, password } = credentials;
 
-  const user = await store.users.getUser(credentials.username);
+  const user = await store.users.getUser(email);
 
   if (!user) {
-    throw new Error("Invalid username or password");
+    throw new Error("Invalid email or password");
   }
 
   const isValid = await bcrypt.compare(password, user.password);
 
   if (!isValid) {
-    throw new Error("Invalid username or password");
+    throw new Error("Invalid email or password");
   }
 
   // Careful, it should not return the user object as it contains the password field
   return {
     id: user.id,
-    username: user.username,
+    email: user.email,
+    name: user.name,
   };
 }
 
-export async function createUser(credentials: Credentials): Promise<User> {
-  const { username, password } = credentials;
+interface CreateUserInput {
+  email: string;
+  name: string;
+  password: string;
+}
 
-  const existingUser = await store.users.getUser(username);
+export async function createUser(input: CreateUserInput): Promise<User> {
+  const { email, name, password } = input;
+
+  const existingUser = await store.users.getUser(email);
   if (existingUser) {
     throw new Response("User already exists", { status: 404 });
   }
@@ -47,11 +55,12 @@ export async function createUser(credentials: Credentials): Promise<User> {
 
   const id = uuidv4();
 
-  const user = await store.users.createUser({id, username, password: hashedPassword});
+  const user = await store.users.createUser({id, email, name, password: hashedPassword});
 
   // Careful, it should not return the user object as it contains the password field
   return {
     id: user.id,
-    username: user.username,
+    email: user.email,
+    name: user.name,
   };
 }

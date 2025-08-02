@@ -1,6 +1,9 @@
 import type { Route } from "./+types/games";
 import {Link, type LoaderFunction, useLoaderData} from "react-router";
 import {store} from "~/.server/db/store";
+import {getLocationName, type Location} from "~/.server/domain/game";
+import type {Game} from "~/.server/db/store/gamesStore";
+
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -12,14 +15,42 @@ export function meta({}: Route.MetaArgs) {
 export async function loader({ params }: Route.LoaderArgs) {
   const games = await store.games.getAllGames();
 
-  return games;
+  const gamesWithLocation = await Promise.all(
+    games.map(async (game) => {
+      if (game.latitude != null && game.longitude != null) {
+        const locationName = await getLocationName(game.latitude, game.longitude);
+        return {
+          ...game,
+          location: locationName
+        };
+      }
+      return {...game, location: undefined };
+    })
+  );
+
+  return {games: gamesWithLocation};
 }
+
+  function formatLocation(location?: Location): string {
+    if (!location) return "Unknown location";
+
+    // Pick fields you want to show, prioritize more specific first:
+    const parts = [
+      location.amenity,
+      location.road,
+      location.neighbourhood,
+      location.town,
+    ];
+
+    // Filter out falsy values and join with commas
+    return parts.filter(Boolean).join(", ");
+  }
 
 export default function Games({
                                 loaderData,
                               }: Route.ComponentProps) {
 
-  const games = loaderData;
+  const {games} = loaderData;
 
   return <main className="p-6 max-w-2xl mx-auto">
     <h1 className="text-2xl font-bold mb-4">Upcoming Matches</h1>
@@ -41,7 +72,7 @@ export default function Games({
             <p className="font-semibold text-lg">
               {new Date(`${game.date}T${game.startTime}`).toLocaleString()}
             </p>
-            <p className="text-sm text-gray-600">{game.location}</p>
+            <p className="text-sm text-gray-600">{formatLocation(game.location)}</p>
             <p className="text-sm">
               Players: {game.enrolledPlayers.length} / {game.maxPlayers}
             </p>

@@ -1,28 +1,25 @@
 import pool from "~/.server/db/client";
 
-interface Credentials {
-  username: string;
-  password: string;
-}
-
 type User = {
   id: string;
-  username: string;
+  email: string;
+  name: string;
   password: string;
 };
 
-export async function getUser(username: String): Promise<User | null> {
+export async function getUser(email: String): Promise<User | null> {
   const result = await pool.query<User>(`
       SELECT
           u.id,
-          u.username,
+          u.email,
+          u.name,
           u.password,
           u.created_at,
           u.updated_at
       FROM users u
-      WHERE u.username = $1
+      WHERE u.email = $1
     `,
-    [username]
+    [email]
   );
 
   return result.rows[0] ?? null;
@@ -30,18 +27,19 @@ export async function getUser(username: String): Promise<User | null> {
 
 interface CreateUserInput {
   id: string;
-  username: string;
+  email: string;
+  name: string;
   password: string;
 }
 
 export async function createUser(input: CreateUserInput): Promise<User> {
   try {
     const result = await pool.query<User>(`
-      INSERT INTO users (id, username, password)
-      VALUES ($1, $2, $3)
-      RETURNING id, username, password, created_at, updated_at
+      INSERT INTO users (id, email, name, password)
+      VALUES ($1, $2, $3, $4)
+      RETURNING id, email, name, password, created_at, updated_at
     `,
-      [input.id, input.username, input.password],
+      [input.id, input.email, input.name, input.password],
     );
     return result.rows[0]
   } catch (err: unknown) {

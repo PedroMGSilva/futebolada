@@ -10,7 +10,8 @@ export const action: ActionFunction = async ({ request }) => {
   const date = formData.get("date");
   const startTime = formData.get("startTime");
   const endTime = formData.get("endTime");
-  const location = formData.get("location");
+  const latitude = formData.get("latitude");
+  const longitude = formData.get("longitude");
   const maxPlayers = formData.get("maxPlayers");
 
   // Basic validation
@@ -18,17 +19,25 @@ export const action: ActionFunction = async ({ request }) => {
     !date || typeof date !== "string" ||
     !startTime || typeof startTime !== "string" ||
     !endTime || typeof endTime !== "string" ||
-    !location || typeof location !== "string" ||
+    !latitude || typeof latitude !== "string" ||
+    !longitude || typeof longitude !== "string" ||
     !maxPlayers || typeof maxPlayers !== "string"
   ) {
     return { error: "All fields are required" };
+  }
+
+  const latNum = Number(latitude);
+  const lonNum = Number(longitude);
+  if (isNaN(latNum) || isNaN(lonNum)) {
+    return { error: "Latitude and longitude must be valid numbers" };
   }
 
   await store.games.createGame({
     date,
     startTime,
     endTime,
-    location,
+    latitude: latNum,
+    longitude: lonNum,
     maxPlayers: Number(maxPlayers),
   })
 
@@ -86,13 +95,28 @@ export default function CreateGame() {
         </div>
 
         <div>
-          <label htmlFor="location" className="block mb-1 font-semibold">
-            Location
+          <label htmlFor="latitude" className="block mb-1 font-semibold">
+            Latitude
           </label>
           <input
-            id="location"
-            type="text"
-            name="location"
+            id="latitude"
+            type="number"
+            name="latitude"
+            step="any"
+            required
+            className="w-full border rounded px-3 py-2"
+          />
+        </div>
+
+        <div>
+          <label htmlFor="longitude" className="block mb-1 font-semibold">
+            Longitude
+          </label>
+          <input
+            id="longitude"
+            type="number"
+            name="longitude"
+            step="any"
             required
             className="w-full border rounded px-3 py-2"
           />

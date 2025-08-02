@@ -35,6 +35,10 @@ export const up = (pgm) => {
     });
     pgm.createIndex('game_players', 'game_id');
     pgm.createIndex('game_players', 'user_id');
+
+    pgm.addConstraint('game_players', 'unique_game_user', {
+        unique: ['game_id', 'user_id'],
+    });
 };
 
 export async function down(pgm) {

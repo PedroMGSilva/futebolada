@@ -32,11 +32,11 @@ export async function action({
     request.headers.get("Cookie"),
   );
   const form = await request.formData();
-  const username = form.get("username");
+  const email = form.get("email");
   const password = form.get("password");
 
   // Validate input types
-  if (typeof username !== "string" || typeof password !== "string") {
+  if (typeof email !== "string" || typeof password !== "string") {
     session.flash("error", "Invalid form submission.");
     return redirect("/login", {
       headers: {
@@ -46,8 +46,8 @@ export async function action({
   }
 
   // Trim and check for empty values
-  if (username.trim() === "" || password.trim() === "") {
-    session.flash("error", "Username and password are required.");
+  if (email.trim() === "" || password.trim() === "") {
+    session.flash("error", "Email and password are required.");
     return redirect("/login", {
       headers: {
         "Set-Cookie": await commitSession(session),
@@ -58,7 +58,7 @@ export async function action({
   try {
     const user = await validateCredentials(
       {
-        username,
+        email,
         password,
       },
     );
@@ -73,7 +73,7 @@ export async function action({
     });
   } catch (err) {
     // Handle authentication error (e.g., wrong password)
-    session.flash("error", "Invalid username or password.");
+    session.flash("error", "Invalid email or password.");
     return redirect("/login", {
       headers: {
         "Set-Cookie": await commitSession(session),
@@ -86,8 +86,8 @@ export default function Login({
                                 loaderData,
                               }: Route.ComponentProps) {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="bg-white shadow-md rounded-lg p-8 w-full max-w-md">
+    <div className="min-h-screen flex items-center justify-center">
+      <div className="shadow-md rounded-lg p-8 w-full max-w-md">
         <h1 className="text-2xl font-bold text-center mb-6">Sign in to your account</h1>
 
         {loaderData?.error && (
@@ -98,20 +98,20 @@ export default function Login({
 
         <form method="POST" className="space-y-6">
           <div>
-            <label htmlFor="username" className="block text-sm font-medium text-gray-700">
-              Username
+            <label htmlFor="email" className="block text-sm font-medium">
+              Email
             </label>
             <input
-              type="text"
-              name="username"
-              id="username"
+              type="email"
+              name="email"
+              id="email"
               className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
               required
             />
           </div>
 
           <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+            <label htmlFor="password" className="block text-sm font-medium">
               Password
             </label>
             <input

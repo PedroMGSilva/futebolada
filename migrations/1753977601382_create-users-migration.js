@@ -6,10 +6,14 @@ export const up = (pgm) => {
             type: 'uuid',
             primaryKey: true,
         },
-        username: {
+        email: {
             type: 'text',
             notNull: true,
             unique: true,
+        },
+        name: {
+            type: 'text',
+            notNull: true,
         },
         password: {
             type: 'text',

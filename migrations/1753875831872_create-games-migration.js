@@ -18,8 +18,12 @@ export const up = (pgm) => {
             type: 'time',
             notNull: true,
         },
-        location: {
-            type: 'text',
+        latitude: {
+            type: 'double precision',
+            notNull: true,
+        },
+        longitude: {
+            type: 'double precision',
             notNull: true,
         },
         max_players: {
