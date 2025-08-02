@@ -1,5 +1,7 @@
-import {type ActionFunction, Form, redirect, useActionData} from "react-router";
+import {type ActionFunction, Form, Link, redirect, useActionData} from "react-router";
 import {store} from "~/.server/db/store";
+import React from "react";
+import {getLocationName} from "~/.server/domain/game";
 
 type ActionData = {
   error?: string;
@@ -32,12 +34,15 @@ export const action: ActionFunction = async ({ request }) => {
     return { error: "Latitude and longitude must be valid numbers" };
   }
 
+  const locationName = await getLocationName(latNum, lonNum);
+
   await store.games.createGame({
     date,
     startTime,
     endTime,
     latitude: latNum,
     longitude: lonNum,
+    location: locationName || "Unknown Location",
     maxPlayers: Number(maxPlayers),
   })
 
@@ -145,6 +150,12 @@ export default function CreateGame() {
           Create Game
         </button>
       </Form>
+
+      <div className="mt-6 text-center md:text-left">
+        <Link to="/" className="text-blue-600 hover:underline">
+          &larr; Back to games
+        </Link>
+      </div>
     </main>
   );
 }

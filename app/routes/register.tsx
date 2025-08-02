@@ -1,7 +1,16 @@
-import {data, Link, redirect} from "react-router";
+import {data, Link, redirect, useFetcher} from "react-router";
 import {commitSession, getSession} from "~/.server/session";
 import type { Route } from "./+types/register";
 import {createUser} from "~/.server/domain/auth";
+import {
+  GoogleReCaptchaProvider,
+  useGoogleReCaptcha,
+} from "react-google-recaptcha-v3";
+import {type FormEvent, useCallback, useRef} from "react";
+import {validateRecaptchaToken} from "~/.server/domain/captcha";
+
+// This should be an environment variable
+const RECAPTCHA_V3_SITE_KEY = "6LfOn5crAAAAAKXNFEFR8zsoYYnClH4S3oRqJ-IK";
 
 export async function loader({
                                request,
@@ -36,12 +45,14 @@ export async function action({
   const name = form.get("name");
   const password = form.get("password");
   const confirmPassword = form.get("confirmPassword");
+  const token = form.get("token");
 
   if (
     typeof email !== "string" ||
     typeof name !== "string" ||
     typeof password !== "string" ||
-    typeof confirmPassword !== "string"
+    typeof confirmPassword !== "string" ||
+    typeof token !== "string"
   ) {
     session.flash("error", "Invalid form submission.");
     return redirect("/register", {
@@ -49,30 +60,31 @@ export async function action({
     });
   }
 
-  if (email.trim() === "" || name.trim() === "" || password.trim() === "") {
-    session.flash("error", "Email, name, and password are required.");
-    return redirect("/register", {
-      headers: { "Set-Cookie": await commitSession(session) },
-    });
-  }
-
-  // Basic email format check (optional but recommended)
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!emailRegex.test(email)) {
-    session.flash("error", "Invalid email address.");
-    return redirect("/register", {
-      headers: { "Set-Cookie": await commitSession(session) },
-    });
-  }
-
-  if (password !== confirmPassword) {
-    session.flash("error", "Passwords do not match.");
-    return redirect("/register", {
-      headers: { "Set-Cookie": await commitSession(session) },
-    });
-  }
-
   try {
+    await validateRecaptchaToken(token);
+
+    if (email.trim() === "" || name.trim() === "" || password.trim() === "") {
+      session.flash("error", "Email, name, and password are required.");
+      return redirect("/register", {
+        headers: { "Set-Cookie": await commitSession(session) },
+      });
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      session.flash("error", "Invalid email address.");
+      return redirect("/register", {
+        headers: { "Set-Cookie": await commitSession(session) },
+      });
+    }
+
+    if (password !== confirmPassword) {
+      session.flash("error", "Passwords do not match.");
+      return redirect("/register", {
+        headers: { "Set-Cookie": await commitSession(session) },
+      });
+    }
+
     const user = await createUser({ email, name, password });
     session.set("user", user);
 
@@ -82,7 +94,7 @@ export async function action({
       },
     });
   } catch (error: any) {
-    session.flash("error", error.message || "An error occurred during registration.");
+    session.flash("error", error.message || "An error occurred.");
     return redirect("/register", {
       headers: {
         "Set-Cookie": await commitSession(session),
@@ -91,9 +103,22 @@ export async function action({
   }
 }
 
-export default function Register({
-                                   loaderData,
-                                 }: Route.ComponentProps) {
+function RegisterForm({ loaderData }: Route.ComponentProps) {
+  const { executeRecaptcha } = useGoogleReCaptcha();
+  const fetcher = useFetcher();
+  const formRef = useRef<HTMLFormElement>(null);
+
+  const handleRegister = useCallback(async (event: FormEvent) => {
+    event.preventDefault();
+    if (!executeRecaptcha || !formRef.current) {
+      return;
+    }
+    const token = await executeRecaptcha("register");
+    const formData = new FormData(formRef.current);
+    formData.append("token", token);
+    fetcher.submit(formData, { method: "POST" });
+  }, [executeRecaptcha, fetcher]);
+
   return (
     <div className="min-h-screen flex items-center justify-center">
       <div className="shadow-md rounded-lg p-8 w-full max-w-md">
@@ -105,7 +130,7 @@ export default function Register({
           </div>
         )}
 
-        <form method="POST" className="space-y-6">
+        <fetcher.Form ref={formRef} onSubmit={handleRegister} className="space-y-6">
           <div>
             <label htmlFor="email" className="block text-sm font-medium">
               Email
@@ -161,12 +186,13 @@ export default function Register({
           <div>
             <button
               type="submit"
-              className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition"
+              disabled={fetcher.state !== 'idle'}
+              className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition disabled:opacity-50"
             >
               Sign Up
             </button>
           </div>
-        </form>
+        </fetcher.Form>
 
         <div className="mt-6 text-center">
           <p className="text-sm text-gray-600">
@@ -178,5 +204,17 @@ export default function Register({
         </div>
       </div>
     </div>
+  );
+}
+
+export default function Register(props: Route.ComponentProps) {
+  if (!RECAPTCHA_V3_SITE_KEY) {
+    console.error("reCAPTCHA Site Key not found.");
+    return <div>reCAPTCHA not configured.</div>;
+  }
+  return (
+    <GoogleReCaptchaProvider reCaptchaKey={RECAPTCHA_V3_SITE_KEY}>
+      <RegisterForm {...props} />
+    </GoogleReCaptchaProvider>
   );
 }

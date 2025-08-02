@@ -1,6 +1,5 @@
-import {Form, Outlet, redirect} from "react-router";
+import {Form, Link, Outlet, redirect} from "react-router";
 import {destroySession, getSession} from "~/.server/session";
-
 
 export const action = async ({ request }: { request: Request }) => {
   const session = await getSession(
@@ -18,7 +17,7 @@ export default function Layout() {
     <div className="min-h-screen flex flex-col">
       {/* Header with logout */}
       <header className="bg-gray-100 dark:bg-gray-900 p-4 flex justify-between items-center shadow">
-        <h1 className="text-xl font-bold">Futebolada</h1>
+        <Link to={"/"} className="text-xl font-bold">Futebolada</Link>
         <Form method="post" action="/logout">
           <button
             type="submit"
@@ -36,7 +35,7 @@ export default function Layout() {
 
       {/* Optional footer */}
       <footer className="bg-gray-100 dark:bg-gray-900 p-4 text-center text-sm text-gray-500">
-        &copy; {new Date().getFullYear()} Your Company
+        &copy; {new Date().getFullYear()} Futebolada.org
       </footer>
     </div>
   );

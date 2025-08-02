@@ -26,6 +26,10 @@ export const up = (pgm) => {
             type: 'double precision',
             notNull: true,
         },
+        location: {
+            type: 'text',
+            notNull: true,
+        },
         max_players: {
             type: 'integer',
             notNull: true,

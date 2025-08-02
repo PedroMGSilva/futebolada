@@ -13,6 +13,7 @@ services:
       DB_USER: myuser
       DB_PASSWORD: mypassword
       DB_NAME: mydatabase
+      RECAPTCHA_V3_SECRET_KEY: 6LfOn5crAAAAAAEmy9MkZNlBR_0MAzKs5-J8KKcR
     ports:
       - "3000:3000"
     networks:

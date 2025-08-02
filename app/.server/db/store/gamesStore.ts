@@ -9,6 +9,7 @@ export type Game = {
   endTime: string;
   latitude: number;
   longitude: number;
+  location: string;
   maxPlayers: number;
   enrolledPlayers: User[];
 };
@@ -22,6 +23,7 @@ export async function getAllGames(): Promise<Game[]> {
       g.end_time AS "endTime",
       g.latitude,
       g.longitude,
+      g.location,
       g.max_players AS "maxPlayers",
       g.created_at,
       g.updated_at,
@@ -56,6 +58,7 @@ export async function getGame(id: String): Promise<Game> {
       g.end_time AS "endTime",
       g.latitude,
       g.longitude,
+      g.location,
       g.max_players AS "maxPlayers",
       g.created_at,
       g.updated_at,
@@ -89,6 +92,7 @@ export async function createGame({
   endTime,
                                    latitude,
   longitude,
+  location,
                                    maxPlayers,
                                  }: {
   date: string;
@@ -96,17 +100,18 @@ export async function createGame({
   endTime: string;
   latitude: number;
   longitude: number;
+  location: string;
   maxPlayers: number;
 }): Promise<Game> {
   const id = uuidv4();
 
   const result = await pool.query<Game>(
     `
-    INSERT INTO games (id, date, start_time, end_time, latitude, longitude, max_players)
-    VALUES ($1, $2, $3, $4, $5, $6, $7)
-    RETURNING id, date, start_time as "startTime", end_time as "endTime", latitude, longitude, max_players as "maxPlayers"
+    INSERT INTO games (id, date, start_time, end_time, latitude, longitude, location, max_players)
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+    RETURNING id, date, start_time as "startTime", end_time as "endTime", latitude, longitude, location, max_players as "maxPlayers"
   `,
-    [id, date, startTime, endTime, latitude, longitude, maxPlayers]
+    [id, date, startTime, endTime, latitude, longitude, location, maxPlayers]
   );
 
   return result.rows[0];
