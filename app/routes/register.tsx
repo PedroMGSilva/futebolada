@@ -1,23 +1,19 @@
-import {data, Link, redirect, useFetcher} from "react-router";
-import {commitSession, getSession} from "~/.server/session";
+import { data, Link, redirect, useFetcher } from "react-router";
+import { commitSession, getSession } from "~/.server/session";
 import type { Route } from "./+types/register";
-import {createUser} from "~/.server/domain/auth";
+import { createUser } from "~/.server/domain/auth";
 import {
   GoogleReCaptchaProvider,
   useGoogleReCaptcha,
 } from "react-google-recaptcha-v3";
-import {type FormEvent, useCallback, useRef} from "react";
-import {validateRecaptchaToken} from "~/.server/domain/captcha";
+import { type FormEvent, useCallback, useRef } from "react";
+import { validateRecaptchaToken } from "~/.server/domain/captcha";
 
 // This should be an environment variable
 const RECAPTCHA_V3_SITE_KEY = "6LfOn5crAAAAAKXNFEFR8zsoYYnClH4S3oRqJ-IK";
 
-export async function loader({
-                               request,
-                             }: Route.LoaderArgs) {
-  const session = await getSession(
-    request.headers.get("Cookie"),
-  );
+export async function loader({ request }: Route.LoaderArgs) {
+  const session = await getSession(request.headers.get("Cookie"));
 
   if (session.has("user")) {
     // Redirect to the home page if they are already signed in.
@@ -34,12 +30,8 @@ export async function loader({
   );
 }
 
-export async function action({
-                               request,
-                             }: Route.ActionArgs) {
-  const session = await getSession(
-    request.headers.get("Cookie"),
-  );
+export async function action({ request }: Route.ActionArgs) {
+  const session = await getSession(request.headers.get("Cookie"));
   const form = await request.formData();
   const email = form.get("email");
   const name = form.get("name");
@@ -93,8 +85,12 @@ export async function action({
         "Set-Cookie": await commitSession(session),
       },
     });
-  } catch (error: any) {
-    session.flash("error", error.message || "An error occurred.");
+  } catch (error: unknown) {
+    let errorMessage = "An unknown error occurred.";
+    if (error instanceof Error) {
+      errorMessage = error.message;
+    }
+    session.flash("error", errorMessage);
     return redirect("/register", {
       headers: {
         "Set-Cookie": await commitSession(session),
@@ -108,21 +104,26 @@ function RegisterForm({ loaderData }: Route.ComponentProps) {
   const fetcher = useFetcher();
   const formRef = useRef<HTMLFormElement>(null);
 
-  const handleRegister = useCallback(async (event: FormEvent) => {
-    event.preventDefault();
-    if (!executeRecaptcha || !formRef.current) {
-      return;
-    }
-    const token = await executeRecaptcha("register");
-    const formData = new FormData(formRef.current);
-    formData.append("token", token);
-    fetcher.submit(formData, { method: "POST" });
-  }, [executeRecaptcha, fetcher]);
+  const handleRegister = useCallback(
+    async (event: FormEvent) => {
+      event.preventDefault();
+      if (!executeRecaptcha || !formRef.current) {
+        return;
+      }
+      const token = await executeRecaptcha("register");
+      const formData = new FormData(formRef.current);
+      formData.append("token", token);
+      fetcher.submit(formData, { method: "POST" });
+    },
+    [executeRecaptcha, fetcher],
+  );
 
   return (
     <div className="min-h-screen flex items-center justify-center">
       <div className="shadow-md rounded-lg p-8 w-full max-w-md">
-        <h1 className="text-2xl font-bold text-center mb-6">Create an account</h1>
+        <h1 className="text-2xl font-bold text-center mb-6">
+          Create an account
+        </h1>
 
         {loaderData?.error && (
           <div className="mb-4 text-red-600 text-sm text-center">
@@ -130,7 +131,11 @@ function RegisterForm({ loaderData }: Route.ComponentProps) {
           </div>
         )}
 
-        <fetcher.Form ref={formRef} onSubmit={handleRegister} className="space-y-6">
+        <fetcher.Form
+          ref={formRef}
+          onSubmit={handleRegister}
+          className="space-y-6"
+        >
           <div>
             <label htmlFor="email" className="block text-sm font-medium">
               Email
@@ -171,7 +176,10 @@ function RegisterForm({ loaderData }: Route.ComponentProps) {
           </div>
 
           <div>
-            <label htmlFor="confirmPassword" className="block text-sm font-medium">
+            <label
+              htmlFor="confirmPassword"
+              className="block text-sm font-medium"
+            >
               Confirm Password
             </label>
             <input
@@ -186,7 +194,7 @@ function RegisterForm({ loaderData }: Route.ComponentProps) {
           <div>
             <button
               type="submit"
-              disabled={fetcher.state !== 'idle'}
+              disabled={fetcher.state !== "idle"}
               className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition disabled:opacity-50"
             >
               Sign Up
@@ -197,7 +205,10 @@ function RegisterForm({ loaderData }: Route.ComponentProps) {
         <div className="mt-6 text-center">
           <p className="text-sm text-gray-600">
             Already have an account?{" "}
-            <Link to="/login" className="font-medium text-blue-600 hover:text-blue-500">
+            <Link
+              to="/login"
+              className="font-medium text-blue-600 hover:text-blue-500"
+            >
               Sign in
             </Link>
           </p>

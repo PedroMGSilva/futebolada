@@ -1,10 +1,8 @@
-import {Form, Link, Outlet, redirect} from "react-router";
-import {destroySession, getSession} from "~/.server/session";
+import { Form, Link, Outlet, redirect } from "react-router";
+import { destroySession, getSession } from "~/.server/session";
 
 export const action = async ({ request }: { request: Request }) => {
-  const session = await getSession(
-    request.headers.get("Cookie"),
-  );
+  const session = await getSession(request.headers.get("Cookie"));
   return redirect("/login", {
     headers: {
       "Set-Cookie": await destroySession(session),
@@ -17,7 +15,9 @@ export default function Layout() {
     <div className="min-h-screen flex flex-col">
       {/* Header with logout */}
       <header className="bg-gray-100 dark:bg-gray-900 p-4 flex justify-between items-center shadow">
-        <Link to={"/"} className="text-xl font-bold">Futebolada</Link>
+        <Link to={"/"} className="text-xl font-bold">
+          Futebolada
+        </Link>
         <Form method="post" action="/logout">
           <button
             type="submit"

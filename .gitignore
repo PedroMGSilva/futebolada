@@ -1,8 +1,57 @@
+# dependencies
+/node_modules
+
+# production
+/dist
+/build
+/.react-router
+
+# local Vite dev server cache
+/.vite
+
+# environment variables
+.env
+.env.*.local
+
+# local development logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# macOS
 .DS_Store
-/node_modules/
 
-# React Router
-/.react-router/
-/build/
+# Windows
+Thumbs.db
 
+# IDE settings
+.vscode/
 .idea/
+*.sublime-project
+*.sublime-workspace
+
+# system files
+*.log
+
+# testing
+/coverage
+
+# optional: editor-specific
+*.swp
+
+# Optional: VSCode local launch/debug configs
+.vscode/launch.json
+.vscode/tasks.json
+
+# Optional: SASS cache
+.sass-cache
+
+# Optional: dotenv backups
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Optional: lint cache
+.eslintcache

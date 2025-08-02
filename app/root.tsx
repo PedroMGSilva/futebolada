@@ -1,27 +1,22 @@
 import {
-  data,
   isRouteErrorResponse,
-  Links, type LoaderFunctionArgs,
+  Links,
   Meta,
-  Outlet, redirect,
+  Outlet,
+  redirect,
   Scripts,
   ScrollRestoration,
 } from "react-router";
 
 import type { Route } from "./+types/root";
 import "./app.css";
-import {commitSession, getSession} from "~/.server/session";
+import { commitSession, getSession } from "~/.server/session";
 
-export async function loader({
-                               request,
-                             }: Route.LoaderArgs) {
+export async function loader({ request }: Route.LoaderArgs) {
   const url = new URL(request.url);
-  const session = await getSession(
-    request.headers.get("Cookie"),
-  );
+  const session = await getSession(request.headers.get("Cookie"));
 
   if (!session.has("user")) {
-
     // Allow access to the login page even if not authenticated
     if (url.pathname === "/login" || url.pathname === "/register") {
       return null;
@@ -59,9 +54,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <Links />
       </head>
       <body>
-      {children}
-      <ScrollRestoration/>
-      <Scripts/>
+        {children}
+        <ScrollRestoration />
+        <Scripts />
       </body>
     </html>
   );

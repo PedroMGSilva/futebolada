@@ -7,8 +7,9 @@ type User = {
   password: string;
 };
 
-export async function getUser(email: String): Promise<User | null> {
-  const result = await pool.query<User>(`
+export async function getUser(email: string): Promise<User | null> {
+  const result = await pool.query<User>(
+    `
       SELECT
           u.id,
           u.email,
@@ -19,7 +20,7 @@ export async function getUser(email: String): Promise<User | null> {
       FROM users u
       WHERE u.email = $1
     `,
-    [email]
+    [email],
   );
 
   return result.rows[0] ?? null;
@@ -34,14 +35,15 @@ interface CreateUserInput {
 
 export async function createUser(input: CreateUserInput): Promise<User> {
   try {
-    const result = await pool.query<User>(`
+    const result = await pool.query<User>(
+      `
       INSERT INTO users (id, email, name, password)
       VALUES ($1, $2, $3, $4)
       RETURNING id, email, name, password, created_at, updated_at
     `,
       [input.id, input.email, input.name, input.password],
     );
-    return result.rows[0]
+    return result.rows[0];
   } catch (err: unknown) {
     if (isPgUniqueViolationError(err)) {
       throw new Response("User already exists", { status: 404 });
@@ -52,5 +54,10 @@ export async function createUser(input: CreateUserInput): Promise<User> {
 }
 
 function isPgUniqueViolationError(err: unknown): err is { code: string } {
-  return typeof err === 'object' && err !== null && 'code' in err && (err as any).code === '23505';
+  return (
+    typeof err === "object" &&
+    err !== null &&
+    "code" in err &&
+    (err as { code: unknown }).code === "23505"
+  );
 }

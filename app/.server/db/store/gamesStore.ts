@@ -1,6 +1,6 @@
 import pool from "~/.server/db/client";
-import { v4 as uuidv4 } from 'uuid';
-import type {User} from "~/.server/domain/auth";
+import { v4 as uuidv4 } from "uuid";
+import type { User } from "~/.server/domain/auth";
 
 export type Game = {
   id: number;
@@ -49,8 +49,9 @@ export async function getAllGames(): Promise<Game[]> {
   return result.rows;
 }
 
-export async function getGame(id: String): Promise<Game> {
-  const result = await pool.query<Game>(`
+export async function getGame(id: string): Promise<Game> {
+  const result = await pool.query<Game>(
+    `
     SELECT
       g.id,
       to_char(g.date, 'YYYY-MM-DD') AS date,
@@ -78,7 +79,9 @@ export async function getGame(id: String): Promise<Game> {
     LEFT JOIN users u ON gp.user_id = u.id
     WHERE g.id = $1
     GROUP BY g.id
-  `, [id]);
+  `,
+    [id],
+  );
 
   const game = result.rows[0];
   if (!game) throw new Response("Game not found", { status: 404 });
@@ -88,13 +91,13 @@ export async function getGame(id: String): Promise<Game> {
 
 export async function createGame({
   date,
-                                   startTime,
+  startTime,
   endTime,
-                                   latitude,
+  latitude,
   longitude,
   location,
-                                   maxPlayers,
-                                 }: {
+  maxPlayers,
+}: {
   date: string;
   startTime: string;
   endTime: string;
@@ -111,15 +114,15 @@ export async function createGame({
     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
     RETURNING id, date, start_time as "startTime", end_time as "endTime", latitude, longitude, location, max_players as "maxPlayers"
   `,
-    [id, date, startTime, endTime, latitude, longitude, location, maxPlayers]
+    [id, date, startTime, endTime, latitude, longitude, location, maxPlayers],
   );
 
   return result.rows[0];
 }
 
 interface enrollInGameInput {
-  gameId: string,
-  userId: string,
+  gameId: string;
+  userId: string;
 }
 
 export async function enrollInGame(input: enrollInGameInput): Promise<void> {
@@ -129,26 +132,30 @@ export async function enrollInGame(input: enrollInGameInput): Promise<void> {
     await client.query("BEGIN");
 
     // Get maxPlayers and current count
-    const { rows: [game] } = await client.query(
+    const {
+      rows: [game],
+    } = await client.query(
       `
       SELECT max_players AS "maxPlayers"
       FROM games
       WHERE id = $1
       `,
-      [input.gameId]
+      [input.gameId],
     );
 
     if (!game) {
       throw new Error("Game not found");
     }
 
-    const { rows: [count] } = await client.query(
+    const {
+      rows: [count],
+    } = await client.query(
       `
       SELECT COUNT(*)::int AS "enrolledCount"
       FROM game_players
       WHERE game_id = $1
       `,
-      [input.gameId]
+      [input.gameId],
     );
 
     if (count.enrolledCount >= game.maxPlayers) {
@@ -161,7 +168,7 @@ export async function enrollInGame(input: enrollInGameInput): Promise<void> {
       INSERT INTO game_players (id, game_id, user_id)
       VALUES ($1, $2, $3)
       `,
-      [id, input.gameId, input.userId]
+      [id, input.gameId, input.userId],
     );
 
     await client.query("COMMIT");
@@ -174,17 +181,18 @@ export async function enrollInGame(input: enrollInGameInput): Promise<void> {
 }
 
 interface unenrollFromGameInput {
-  gameId: string,
-  userId: string,
+  gameId: string;
+  userId: string;
 }
 
-export async function unenrollFromGame(input: unenrollFromGameInput): Promise<void> {
+export async function unenrollFromGame(
+  input: unenrollFromGameInput,
+): Promise<void> {
   await pool.query(
     `
     DELETE FROM game_players
     WHERE game_id = $1 AND user_id = $2
   `,
-    [input.gameId, input.userId]
+    [input.gameId, input.userId],
   );
 }
-

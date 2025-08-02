@@ -1,7 +1,12 @@
-import {type ActionFunction, Form, Link, redirect, useActionData} from "react-router";
-import {store} from "~/.server/db/store";
-import React from "react";
-import {getLocationName} from "~/.server/domain/game";
+import {
+  type ActionFunction,
+  Form,
+  Link,
+  redirect,
+  useActionData,
+} from "react-router";
+import { store } from "~/.server/db/store";
+import { getLocationName } from "~/.server/domain/game";
 
 type ActionData = {
   error?: string;
@@ -18,12 +23,18 @@ export const action: ActionFunction = async ({ request }) => {
 
   // Basic validation
   if (
-    !date || typeof date !== "string" ||
-    !startTime || typeof startTime !== "string" ||
-    !endTime || typeof endTime !== "string" ||
-    !latitude || typeof latitude !== "string" ||
-    !longitude || typeof longitude !== "string" ||
-    !maxPlayers || typeof maxPlayers !== "string"
+    !date ||
+    typeof date !== "string" ||
+    !startTime ||
+    typeof startTime !== "string" ||
+    !endTime ||
+    typeof endTime !== "string" ||
+    !latitude ||
+    typeof latitude !== "string" ||
+    !longitude ||
+    typeof longitude !== "string" ||
+    !maxPlayers ||
+    typeof maxPlayers !== "string"
   ) {
     return { error: "All fields are required" };
   }
@@ -44,7 +55,7 @@ export const action: ActionFunction = async ({ request }) => {
     longitude: lonNum,
     location: locationName || "Unknown Location",
     maxPlayers: Number(maxPlayers),
-  })
+  });
 
   // After successful save, redirect to home or calendar page
   return redirect("/");

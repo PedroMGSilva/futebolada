@@ -1,4 +1,3 @@
-
 export interface Location {
   amenity?: string;
   road?: string;
@@ -11,7 +10,10 @@ export interface Location {
   country?: string;
   country_code?: string;
 }
-export async function getLocationName(latitude: number, longitude: number): Promise<string | null> {
+export async function getLocationName(
+  latitude: number,
+  longitude: number,
+): Promise<string | null> {
   const url = `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`;
 
   const response = await fetch(url, {

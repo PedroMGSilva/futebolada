@@ -1,6 +1,7 @@
-
 export async function validateRecaptchaToken(token: string) {
-  const secret = process.env.RECAPTCHA_V3_SECRET_KEY || "6LfOn5crAAAAAAEmy9MkZNlBR_0MAzKs5-J8KKcR";
+  const secret =
+    process.env.RECAPTCHA_V3_SECRET_KEY ||
+    "6LfOn5crAAAAAAEmy9MkZNlBR_0MAzKs5-J8KKcR";
   if (!secret) {
     throw new Error("reCAPTCHA secret key not configured.");
   }
