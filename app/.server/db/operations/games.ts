@@ -1,13 +1,13 @@
 import pool from "~/.server/db/client";
-import { v4 as uuidv4 } from "uuid";
 import type { User } from "~/.server/domain/auth";
 
-type Guest = { id: string; name: string };
+type Guest = { id: string; name: string; createdBy: string };
 type Player = { id: string; user?: User; guest?: Guest };
 type PlayerEnrolled = {
   id: string;
   position: number;
   player: Player;
+  createdBy: string;
 };
 type Game = {
   id: string;
@@ -58,12 +58,14 @@ function parseGameRows(rows: any[]): Game[] {
         player.guest = {
           id: row.guest_id,
           name: row.guest_name,
+          createdBy: row.guest_created_by,
         };
       }
 
       game.playersEnrolled.push({
         id: row.players_enrolled_id,
         position: row.position,
+        createdBy: row.players_enrolled_created_by,
         player,
       });
     }
@@ -89,13 +91,15 @@ export async function getUpcomingGames(): Promise<GetUpcomingGamesResponse> {
       g.max_players,
       g.price,
       pe.id AS players_enrolled_id,
+      pe.created_by AS players_enrolled_created_by,
       pe.position,
       p.id AS player_id,
       u.id AS user_id,
       u.email,
       u.name as user_name,
       gu.id as guest_id,
-      gu.name as guest_name
+      gu.name as guest_name,
+      gu.created_by as guest_created_by
     FROM games g
     LEFT JOIN players_enrolled pe ON pe.game_id = g.id
     LEFT JOIN players p ON p.id = pe.player_id
@@ -123,13 +127,15 @@ export async function getGameById(gameId: string): Promise<Game | null> {
       g.max_players,
       g.price,
       pe.id AS players_enrolled_id,
+      pe.created_by AS players_enrolled_created_by,
       pe.position,
       p.id AS player_id,
       u.id AS user_id,
       u.email,
       u.name as user_name,
       gu.id as guest_id,
-      gu.name as guest_name
+      gu.name as guest_name,
+      gu.created_by as guest_created_by
     FROM games g
     LEFT JOIN players_enrolled pe ON pe.game_id = g.id
     LEFT JOIN players p ON p.id = pe.player_id
