@@ -1,13 +1,15 @@
 import { data, Link, redirect, useFetcher } from "react-router";
 import { commitSession, getSession } from "~/.server/session";
 import type { Route } from "./+types/register";
-import { createUser } from "~/.server/domain/auth";
 import {
   GoogleReCaptchaProvider,
   useGoogleReCaptcha,
 } from "react-google-recaptcha-v3";
 import { type FormEvent, useCallback, useRef } from "react";
 import { validateRecaptchaToken } from "~/.server/domain/captcha";
+import bcrypt from "bcrypt";
+import {v4 as uuidv4} from "uuid";
+import {store} from "~/.server/db/operations";
 
 // This should be an environment variable
 const RECAPTCHA_V3_SITE_KEY = "6LfOn5crAAAAAKXNFEFR8zsoYYnClH4S3oRqJ-IK";
@@ -15,7 +17,7 @@ const RECAPTCHA_V3_SITE_KEY = "6LfOn5crAAAAAKXNFEFR8zsoYYnClH4S3oRqJ-IK";
 export async function loader({ request }: Route.LoaderArgs) {
   const session = await getSession(request.headers.get("Cookie"));
 
-  if (session.has("user")) {
+  if (session.has("userId")) {
     // Redirect to the home page if they are already signed in.
     return redirect("/");
   }
@@ -77,8 +79,20 @@ export async function action({ request }: Route.ActionArgs) {
       });
     }
 
-    const user = await createUser({ email, name, password });
-    session.set("user", user);
+    const hashedPassword = await bcrypt.hash(password, 12);
+
+    const userId = uuidv4();
+    const playerId = uuidv4();
+
+    const {user, player} = await store.users.createUserAndPlayer({
+      userId,
+      playerId,
+      email,
+      name,
+      password: hashedPassword,
+    });
+
+    session.set("userId", user.id);
 
     return redirect("/", {
       headers: {
@@ -113,7 +127,7 @@ function RegisterForm({ loaderData }: Route.ComponentProps) {
       const token = await executeRecaptcha("register");
       const formData = new FormData(formRef.current);
       formData.append("token", token);
-      fetcher.submit(formData, { method: "POST" });
+      await fetcher.submit(formData, { method: "POST" });
     },
     [executeRecaptcha, fetcher],
   );

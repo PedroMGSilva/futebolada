@@ -16,7 +16,7 @@ export async function loader({ request }: Route.LoaderArgs) {
   const url = new URL(request.url);
   const session = await getSession(request.headers.get("Cookie"));
 
-  if (!session.has("user")) {
+  if (!session.has("userId")) {
     // Allow access to the login page even if not authenticated
     if (url.pathname === "/login" || url.pathname === "/register") {
       return null;

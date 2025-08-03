@@ -1,13 +1,14 @@
 import { data, Link, redirect, useFetcher } from "react-router";
 import { commitSession, getSession } from "~/.server/session";
 import type { Route } from "./+types/login";
-import { validateCredentials } from "~/.server/domain/auth";
 import { validateRecaptchaToken } from "~/.server/domain/captcha";
 import {
   GoogleReCaptchaProvider,
   useGoogleReCaptcha,
 } from "react-google-recaptcha-v3";
 import { type FormEvent, useCallback, useRef } from "react";
+import {store} from "~/.server/db/operations";
+import bcrypt from "bcrypt";
 
 // This should be an environment variable
 const RECAPTCHA_V3_SITE_KEY = "6LfOn5crAAAAAKXNFEFR8zsoYYnClH4S3oRqJ-IK";
@@ -15,7 +16,7 @@ const RECAPTCHA_V3_SITE_KEY = "6LfOn5crAAAAAKXNFEFR8zsoYYnClH4S3oRqJ-IK";
 export async function loader({ request }: Route.LoaderArgs) {
   const session = await getSession(request.headers.get("Cookie"));
 
-  if (session.has("user")) {
+  if (session.has("userId")) {
     // Redirect to the home page if they are already signed in.
     return redirect("/");
   }
@@ -63,12 +64,29 @@ export async function action({ request }: Route.ActionArgs) {
       });
     }
 
-    const user = await validateCredentials({
-      email,
-      password,
-    });
+    const user = await store.users.getUser(email);
 
-    session.set("user", user);
+    if (!user) {
+      session.flash("error", "Invalid email or password.");
+      return redirect("/login", {
+        headers: {
+          "Set-Cookie": await commitSession(session),
+        },
+      });
+    }
+
+    const isValid = await bcrypt.compare(password, user.password);
+
+    if (!isValid) {
+      session.flash("error", "Invalid email or password.");
+      return redirect("/login", {
+        headers: {
+          "Set-Cookie": await commitSession(session),
+        },
+      });
+    }
+
+    session.set("userId", user.id);
 
     // Login succeeded, send them to the home page.
     return redirect("/", {
@@ -95,16 +113,16 @@ function LoginForm({ loaderData }: Route.ComponentProps) {
   const fetcher = useFetcher();
   const formRef = useRef<HTMLFormElement>(null);
 
-  const handleRegister = useCallback(
+  const handleLogin = useCallback(
     async (event: FormEvent) => {
       event.preventDefault();
       if (!executeRecaptcha || !formRef.current) {
         return;
       }
-      const token = await executeRecaptcha("register");
+      const token = await executeRecaptcha("login");
       const formData = new FormData(formRef.current);
       formData.append("token", token);
-      fetcher.submit(formData, { method: "POST" });
+      await fetcher.submit(formData, {method: "POST"});
     },
     [executeRecaptcha, fetcher],
   );
@@ -124,7 +142,7 @@ function LoginForm({ loaderData }: Route.ComponentProps) {
 
         <fetcher.Form
           ref={formRef}
-          onSubmit={handleRegister}
+          onSubmit={handleLogin}
           className="space-y-6"
         >
           <div>

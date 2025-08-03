@@ -7,11 +7,11 @@ import {
 
 export default [
   layout("routes/layout.tsx", [
-    index("routes/games.tsx"),
+    index("routes/index.tsx"),
     route("games/create", "routes/create-game.tsx"),
     route("games/:gameId", "routes/game-details.tsx"),
-    route("login", "routes/login.tsx"),
-    route("register", "routes/register.tsx"),
     route("logout", "routes/logout.tsx"),
   ]),
+  route("login", "routes/login.tsx"),
+  route("register", "routes/register.tsx"),
 ] satisfies RouteConfig;

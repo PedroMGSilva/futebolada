@@ -1,40 +1,24 @@
 export const shorthands = undefined;
 
 export const up = (pgm) => {
-  pgm.createTable("games", {
+  pgm.createTable("players_enrolled", {
     id: {
       type: "uuid",
       primaryKey: true,
     },
-    date: {
-      type: "date",
+    game_id: {
+      type: "uuid",
+      references: "games(id)",
+      onDelete: "CASCADE",
       notNull: true,
     },
-    start_time: {
-      type: "time",
+    player_id: {
+      type: "uuid",
+      references: "players(id)",
+      onDelete: "CASCADE",
       notNull: true,
     },
-    end_time: {
-      type: "time",
-      notNull: true,
-    },
-    latitude: {
-      type: "double precision",
-      notNull: true,
-    },
-    longitude: {
-      type: "double precision",
-      notNull: true,
-    },
-    location: {
-      type: "text",
-      notNull: true,
-    },
-    max_players: {
-      type: "integer",
-      notNull: true,
-    },
-    price: {
+    position: {
       type: "integer",
       notNull: true,
     },
@@ -59,10 +43,18 @@ export const up = (pgm) => {
       onDelete: 'SET NULL'
     },
   });
+  pgm.createIndex("players_enrolled", "game_id");
+  pgm.createIndex("players_enrolled", "player_id");
 
-  pgm.createIndex("games", ["date", "start_time", "end_time"]);
+  pgm.addConstraint("players_enrolled", "unique_game_user", {
+    unique: ["game_id", "player_id"],
+  });
+
+  pgm.addConstraint("players_enrolled", "unique_game_position", {
+    unique: ["game_id", "position"],
+  });
 };
 
 export async function down(pgm) {
-  pgm.dropTable("games");
+  pgm.dropTable("players_enrolled");
 }

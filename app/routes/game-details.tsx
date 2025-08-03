@@ -1,30 +1,29 @@
 import type { Route } from "./+types/game-details";
-import { store } from "~/.server/db/store";
+import { store } from "app/.server/db/operations";
 import { Form, Link, redirect } from "react-router";
 import { getSession } from "~/.server/session";
-import { CalendarIcon, ClockIcon } from "@heroicons/react/16/solid";
+import { CalendarIcon, ClockIcon, CurrencyEuroIcon } from "@heroicons/react/16/solid";
+import {v4 as uuidv4} from "uuid";
 
 export async function loader({ request, params }: Route.LoaderArgs) {
   const session = await getSession(request.headers.get("Cookie"));
   const gameId = params.gameId;
 
-  const user = session.get("user");
+  const userId = session.get("userId")!!;
 
-  if (!user) {
-    // Not logged in, redirect to login
-    return redirect("/login");
+  const game = await store.games.getGameById(gameId);
+
+  if(game === null) {
+    throw new Response("Game not found", { status: 404 });
   }
-
-  const game = await store.games.getGame(gameId);
-
-  return { game, user };
+  return { game, userId };
 }
 
 export async function action({ request, params }: Route.ActionArgs) {
   const session = await getSession(request.headers.get("Cookie"));
-  const user = session.get("user");
+  const userId = session.get("userId")!!;
 
-  if (!user) {
+  if (!userId) {
     // Not logged in, redirect to login
     return redirect("/login");
   }
@@ -34,21 +33,57 @@ export async function action({ request, params }: Route.ActionArgs) {
     throw new Response("Game ID required", { status: 400 });
   }
 
-  const form = await request.formData();
-  const actionType = form.get("_action");
+  const formData = await request.formData();
+  const actionType = formData.get("_action");
 
   if (actionType === "unenroll") {
-    await store.games.unenrollFromGame({ gameId, userId: user.id });
+    const player = await store.players.getByUserId(userId)
+
+    if(!player) {
+      throw new Response("Player not found for user", { status: 400 });
+    }
+
+    await store.games.unenrollFromGame({ gameId, playerId: player.id });
   } else if (actionType === "enroll") {
-    await store.games.enrollInGame({ gameId, userId: user.id });
+
+    const game = await store.games.getGameById(gameId);
+
+    if(game === null) {
+      throw new Response("Game not found", { status: 404 });
+    }
+
+    const position = formData.get("position");
+
+    if (
+      !position ||
+      typeof position !== "string"
+    ) {
+      return { error: "All fields are required" };
+    }
+
+    const positionNum = Number(position);
+    if (isNaN(positionNum) || positionNum < 1 || positionNum > game.maxPlayers) {
+      throw new Response("Invalid position", { status: 400 });
+    }
+
+    const player = await store.players.getByUserId(userId);
+    if (!player) {
+      throw new Response("Player not found for user", { status: 400 });
+    }
+
+    const id = uuidv4();
+
+    await store.games.enrollInGame({ playerEnrolledId: id, gameId, playerId: player.id, position: positionNum, actorId: userId });
   }
 
   return redirect(`/games/${gameId}`); // Reload current game details page after enrolling
 }
 
 export default function GameDetails({ loaderData }: Route.ComponentProps) {
-  const { game, user } = loaderData;
-  const isEnrolled = game.enrolledPlayers.some((p) => p.id === user.id);
+  const { game, userId } = loaderData;
+  const isEnrolled = game.playersEnrolled.some(
+    (p) => p.player.user?.id === userId
+  );
 
   return (
     <main className="max-w-6xl mx-auto p-6">
@@ -60,7 +95,7 @@ export default function GameDetails({ loaderData }: Route.ComponentProps) {
         {/* Left panel: game details */}
         <section className="md:w-1/2 bg-white dark:bg-gray-800 rounded-lg shadow p-6">
           <p className="flex items-center gap-3 mb-6">
-            <CalendarIcon className="w-6 h-6 text-blue-600" />
+            <CalendarIcon className="w-6 h-6 text-blue-600"/>
             <span className="text-xl font-semibold">
               {new Date(game.date).toLocaleDateString(undefined, {
                 weekday: "long",
@@ -71,9 +106,18 @@ export default function GameDetails({ loaderData }: Route.ComponentProps) {
             </span>
           </p>
           <p className="flex items-center gap-3 mb-6">
-            <ClockIcon className="w-6 h-6 text-green-600" />
+            <ClockIcon className="w-6 h-6 text-blue-600"/>
             <span className="text-xl font-semibold">
               {game.startTime.slice(0, 5)} - {game.endTime.slice(0, 5)}
+            </span>
+          </p>
+          <p className="flex items-center gap-3 mb-6">
+            <CurrencyEuroIcon className="w-6 h-6 text-blue-600"/>
+            <span className="text-xl font-semibold">
+              {(game.price / 100).toLocaleString(undefined, {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              })}
             </span>
           </p>
 
@@ -92,59 +136,56 @@ export default function GameDetails({ loaderData }: Route.ComponentProps) {
         {/* Right panel: enrolled players + enroll button */}
         <section className="md:w-1/2 bg-white dark:bg-gray-800 rounded-lg shadow p-6 flex flex-col">
           <h2 className="text-xl font-semibold mb-4">
-            Enrolled Players ({game.enrolledPlayers.length}/{game.maxPlayers})
+            Enrolled Players ({game.playersEnrolled.length}/{game.maxPlayers})
           </h2>
           <ul className="flex-grow overflow-auto list-none mb-6 space-y-2">
             {[...Array(game.maxPlayers)].map((_, i) => {
-              const player = game.enrolledPlayers[i];
+              const playerEnrolled = game.playersEnrolled.find(p => p.position === i + 1);
               return (
                 <li
                   key={i}
                   className="flex justify-between items-center border-b pb-2"
                 >
-                  <span>
-                    {player ? (
-                      player.name
-                    ) : (
-                      <span className="text-gray-400 italic">Empty Slot</span>
-                    )}
-                  </span>
-                  {player?.id === user.id && (
-                    <Form method="post">
-                      <input type="hidden" name="_action" value="unenroll" />
-                      <button
-                        type="submit"
-                        className="text-sm text-red-600 hover:text-red-800"
-                      >
-                        Remove
-                      </button>
-                    </Form>
+    <span>
+      {playerEnrolled ? (
+        playerEnrolled.player.user?.name ||
+        playerEnrolled.player.guest?.name ||
+        "Unknown"
+      ) : (
+        <span className="text-gray-400 italic">Empty Slot</span>
+      )}
+    </span>
+
+                  {playerEnrolled ? (
+                    playerEnrolled.player.user?.id === userId && (
+                      <Form method="post">
+                        <input type="hidden" name="_action" value="unenroll"/>
+                        <button
+                          type="submit"
+                          className="text-sm text-red-600 hover:text-red-800"
+                        >
+                          Remove
+                        </button>
+                      </Form>
+                    )
+                  ) : (
+                    !isEnrolled && (
+                      <Form method="post">
+                        <input type="hidden" name="_action" value="enroll"/>
+                        <input type="hidden" name="position" value={i + 1}/>
+                        <button
+                          type="submit"
+                          className="text-sm text-green-600 hover:text-green-800"
+                        >
+                          Enroll here
+                        </button>
+                      </Form>
+                    )
                   )}
                 </li>
               );
             })}
           </ul>
-
-          <Form method="post" className="mt-auto">
-            <input type="hidden" name="_action" value="enroll" />
-            <button
-              type="submit"
-              disabled={
-                isEnrolled || game.enrolledPlayers.length >= game.maxPlayers
-              }
-              className={`w-full py-2 px-4 rounded text-white ${
-                isEnrolled || game.enrolledPlayers.length >= game.maxPlayers
-                  ? "bg-gray-400 cursor-not-allowed"
-                  : "bg-blue-600 hover:bg-blue-700"
-              } transition`}
-            >
-              {isEnrolled
-                ? "Already enrolled"
-                : game.enrolledPlayers.length >= game.maxPlayers
-                  ? "Game is full"
-                  : "Enroll me"}
-            </button>
-          </Form>
         </section>
       </div>
 

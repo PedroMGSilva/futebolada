@@ -1,6 +1,6 @@
-import type { Route } from "./+types/games";
+import type { Route } from "./+types/index";
 import { Link } from "react-router";
-import { store } from "~/.server/db/store";
+import { store } from "app/.server/db/operations";
 import {
   CalendarIcon,
   ClockIcon,
@@ -17,12 +17,12 @@ export function meta({}: Route.MetaArgs) {
 
 // eslint-disable-next-line
 export async function loader({ params }: Route.LoaderArgs) {
-  const games = await store.games.getAllGames();
+  const { games } = await store.games.getUpcomingGames();
 
   return { games };
 }
 
-export default function Games({ loaderData }: Route.ComponentProps) {
+export default function Index({ loaderData }: Route.ComponentProps) {
   const { games } = loaderData;
 
   return (
@@ -63,7 +63,7 @@ export default function Games({ loaderData }: Route.ComponentProps) {
               <p className="flex items-center gap-2 mb-2">
                 <UserGroupIcon className={"w-6 h-6 text-blue-600"} />
                 <span className={"text-lg font-semibold"}>
-                  {game.enrolledPlayers.length} / {game.maxPlayers}
+                  {game.playersEnrolled.length} / {game.maxPlayers}
                 </span>
               </p>
               <p className="text-sm text-gray-600">{game.location}</p>

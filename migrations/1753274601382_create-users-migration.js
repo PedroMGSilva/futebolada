@@ -1,41 +1,22 @@
 export const shorthands = undefined;
 
 export const up = (pgm) => {
-  pgm.createTable("games", {
+  pgm.createTable("users", {
     id: {
       type: "uuid",
       primaryKey: true,
     },
-    date: {
-      type: "date",
+    email: {
+      type: "text",
       notNull: true,
+      unique: true,
     },
-    start_time: {
-      type: "time",
-      notNull: true,
-    },
-    end_time: {
-      type: "time",
-      notNull: true,
-    },
-    latitude: {
-      type: "double precision",
-      notNull: true,
-    },
-    longitude: {
-      type: "double precision",
-      notNull: true,
-    },
-    location: {
+    name: {
       type: "text",
       notNull: true,
     },
-    max_players: {
-      type: "integer",
-      notNull: true,
-    },
-    price: {
-      type: "integer",
+    password: {
+      type: "text",
       notNull: true,
     },
     created_at: {
@@ -59,10 +40,8 @@ export const up = (pgm) => {
       onDelete: 'SET NULL'
     },
   });
-
-  pgm.createIndex("games", ["date", "start_time", "end_time"]);
 };
 
 export async function down(pgm) {
-  pgm.dropTable("games");
+  pgm.dropTable("users");
 }

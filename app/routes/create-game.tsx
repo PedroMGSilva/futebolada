@@ -5,14 +5,18 @@ import {
   redirect,
   useActionData,
 } from "react-router";
-import { store } from "~/.server/db/store";
+import { store } from "app/.server/db/operations";
 import { getLocationName } from "~/.server/domain/game";
+import {v4 as uuidv4} from "uuid";
+import {getSession} from "~/.server/session";
 
 type ActionData = {
   error?: string;
 };
 
 export const action: ActionFunction = async ({ request }) => {
+  const session = await getSession(request.headers.get("Cookie"));
+
   const formData = await request.formData();
   const date = formData.get("date");
   const startTime = formData.get("startTime");
@@ -20,6 +24,7 @@ export const action: ActionFunction = async ({ request }) => {
   const latitude = formData.get("latitude");
   const longitude = formData.get("longitude");
   const maxPlayers = formData.get("maxPlayers");
+  const price = formData.get("price");
 
   // Basic validation
   if (
@@ -34,27 +39,47 @@ export const action: ActionFunction = async ({ request }) => {
     !longitude ||
     typeof longitude !== "string" ||
     !maxPlayers ||
-    typeof maxPlayers !== "string"
+    typeof maxPlayers !== "string" ||
+    !price ||
+    typeof price !== "string"
   ) {
     return { error: "All fields are required" };
   }
 
   const latNum = Number(latitude);
   const lonNum = Number(longitude);
+  const maxPlayersNum = Number(maxPlayers);
+  const priceNum = Number(price);
   if (isNaN(latNum) || isNaN(lonNum)) {
     return { error: "Latitude and longitude must be valid numbers" };
   }
 
+  if (isNaN(maxPlayersNum) || maxPlayersNum < 1) {
+    return { error: "Max players must be a positive number" };
+  }
+
+  if (isNaN(priceNum) || priceNum < 0) {
+    return { error: "Price must be a non-negative number" };
+  }
+
+  // Convert price in dollars to cents (integer)
+  const priceCents = Math.round(priceNum * 100);
+
   const locationName = await getLocationName(latNum, lonNum);
+  const id = uuidv4();
 
   await store.games.createGame({
+    id,
     date,
     startTime,
     endTime,
     latitude: latNum,
     longitude: lonNum,
     location: locationName || "Unknown Location",
-    maxPlayers: Number(maxPlayers),
+    maxPlayers: maxPlayersNum,
+    price: priceCents,
+    createdBy: session.get("userId")!!,
+    updatedBy: session.get("userId")!!,
   });
 
   // After successful save, redirect to home or calendar page
@@ -149,6 +174,22 @@ export default function CreateGame() {
             min={1}
             max={100}
             defaultValue={10}
+            required
+            className="w-full border rounded px-3 py-2"
+          />
+        </div>
+
+        <div>
+          <label htmlFor="price" className="block mb-1 font-semibold">
+            Price (in euros)
+          </label>
+          <input
+            id="price"
+            name="price"
+            type="number"
+            min="0"
+            step="0.01"
+            defaultValue="0.00"
             required
             className="w-full border rounded px-3 py-2"
           />
