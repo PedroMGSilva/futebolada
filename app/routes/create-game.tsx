@@ -7,8 +7,8 @@ import {
 } from "react-router";
 import { store } from "app/.server/db/operations";
 import { getLocationName } from "~/.server/domain/game";
-import {v4 as uuidv4} from "uuid";
-import {getSession} from "~/.server/session";
+import { v4 as uuidv4 } from "uuid";
+import { getSession } from "~/.server/session";
 
 type ActionData = {
   error?: string;
@@ -78,8 +78,8 @@ export const action: ActionFunction = async ({ request }) => {
     location: locationName || "Unknown Location",
     maxPlayers: maxPlayersNum,
     price: priceCents,
-    createdBy: session.get("userId")!!,
-    updatedBy: session.get("userId")!!,
+    createdBy: session.get("userId")!,
+    updatedBy: session.get("userId")!,
   });
 
   // After successful save, redirect to home or calendar page

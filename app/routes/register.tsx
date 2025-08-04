@@ -8,11 +8,9 @@ import {
 import { type FormEvent, useCallback, useRef } from "react";
 import { validateRecaptchaToken } from "~/.server/domain/captcha";
 import bcrypt from "bcrypt";
-import {v4 as uuidv4} from "uuid";
-import {store} from "~/.server/db/operations";
-
-// This should be an environment variable
-const RECAPTCHA_V3_SITE_KEY = "6LfOn5crAAAAAKXNFEFR8zsoYYnClH4S3oRqJ-IK";
+import { v4 as uuidv4 } from "uuid";
+import { store } from "~/.server/db/operations";
+import {config} from "~/.server/config";
 
 export async function loader({ request }: Route.LoaderArgs) {
   const session = await getSession(request.headers.get("Cookie"));
@@ -22,8 +20,13 @@ export async function loader({ request }: Route.LoaderArgs) {
     return redirect("/");
   }
 
+  const recaptchaV3SiteKey = config.recaptchaV3SiteKey;
+
   return data(
-    { error: session.get("error") },
+    {
+      recaptchaV3SiteKey: recaptchaV3SiteKey,
+      error: session.get("error")
+    },
     {
       headers: {
         "Set-Cookie": await commitSession(session),
@@ -84,7 +87,7 @@ export async function action({ request }: Route.ActionArgs) {
     const userId = uuidv4();
     const playerId = uuidv4();
 
-    const {user, player} = await store.users.createUserAndPlayer({
+    const { user } = await store.users.createUserAndPlayer({
       userId,
       playerId,
       email,
@@ -118,6 +121,8 @@ function RegisterForm({ loaderData }: Route.ComponentProps) {
   const fetcher = useFetcher();
   const formRef = useRef<HTMLFormElement>(null);
 
+  const {error} = loaderData;
+
   const handleRegister = useCallback(
     async (event: FormEvent) => {
       event.preventDefault();
@@ -139,9 +144,9 @@ function RegisterForm({ loaderData }: Route.ComponentProps) {
           Create an account
         </h1>
 
-        {loaderData?.error && (
+        {error && (
           <div className="mb-4 text-red-600 text-sm text-center">
-            {loaderData.error}
+            {error}
           </div>
         )}
 
@@ -233,12 +238,13 @@ function RegisterForm({ loaderData }: Route.ComponentProps) {
 }
 
 export default function Register(props: Route.ComponentProps) {
-  if (!RECAPTCHA_V3_SITE_KEY) {
+  const {recaptchaV3SiteKey} = props.loaderData;
+  if (!recaptchaV3SiteKey) {
     console.error("reCAPTCHA Site Key not found.");
     return <div>reCAPTCHA not configured.</div>;
   }
   return (
-    <GoogleReCaptchaProvider reCaptchaKey={RECAPTCHA_V3_SITE_KEY}>
+    <GoogleReCaptchaProvider reCaptchaKey={recaptchaV3SiteKey}>
       <RegisterForm {...props} />
     </GoogleReCaptchaProvider>
   );

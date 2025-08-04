@@ -7,16 +7,16 @@ export const up = (pgm) => {
       primaryKey: true,
     },
     user_id: {
-      type: 'uuid',
-      references: 'users',
+      type: "uuid",
+      references: "users",
       unique: true,
-      onDelete: 'CASCADE'
+      onDelete: "CASCADE",
     },
     guest_id: {
-      type: 'uuid',
-      references: 'guests',
+      type: "uuid",
+      references: "guests",
       unique: true,
-      onDelete: 'CASCADE'
+      onDelete: "CASCADE",
     },
     created_at: {
       type: "timestamp",
@@ -24,9 +24,9 @@ export const up = (pgm) => {
       default: pgm.func("current_timestamp"),
     },
     created_by: {
-      type: 'uuid',
-      references: 'users(id)',
-      onDelete: 'SET NULL'
+      type: "uuid",
+      references: "users(id)",
+      onDelete: "SET NULL",
     },
     updated_at: {
       type: "timestamp",
@@ -34,15 +34,15 @@ export const up = (pgm) => {
       default: pgm.func("current_timestamp"),
     },
     updated_by: {
-      type: 'uuid',
-      references: 'users(id)',
-      onDelete: 'SET NULL'
+      type: "uuid",
+      references: "users(id)",
+      onDelete: "SET NULL",
     },
   });
 
-  pgm.addConstraint('players', 'players_user_or_guest_check', {
+  pgm.addConstraint("players", "players_user_or_guest_check", {
     check: `(user_id IS NOT NULL AND guest_id IS NULL) OR
-        (user_id IS NULL AND guest_id IS NOT NULL)`
+        (user_id IS NULL AND guest_id IS NOT NULL)`,
   });
 };
 

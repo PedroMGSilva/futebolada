@@ -1,11 +1,12 @@
 import { Pool } from "pg";
+import {config} from "~/.server/config";
 
 const pool = new Pool({
-  host: process.env.DB_HOST || "localhost",
-  port: parseInt(process.env.DB_PORT ?? "", 10) || 5432,
-  user: process.env.DB_USER || "myuser",
-  password: process.env.DB_PASSWORD || "mypassword",
-  database: process.env.DB_NAME || "mydatabase",
+  host: config.db.host,
+  port: config.db.port,
+  user: config.db.user,
+  password: config.db.password,
+  database: config.db.name,
 });
 
 export default pool;

@@ -5,3 +5,7 @@ www.futebolada.org {
 futebolada.org {
   reverse_proxy app:3000
 }
+
+localhost {
+  reverse_proxy app:3000
+}

@@ -1,6 +1,5 @@
 import { store } from "app/.server/db/operations";
 import bcrypt from "bcrypt";
-import { v4 as uuidv4 } from "uuid";
 
 export type User = {
   id: string;

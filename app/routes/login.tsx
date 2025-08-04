@@ -9,9 +9,7 @@ import {
 import { type FormEvent, useCallback, useRef } from "react";
 import {store} from "~/.server/db/operations";
 import bcrypt from "bcrypt";
-
-// This should be an environment variable
-const RECAPTCHA_V3_SITE_KEY = "6LfOn5crAAAAAKXNFEFR8zsoYYnClH4S3oRqJ-IK";
+import {config} from "~/.server/config";
 
 export async function loader({ request }: Route.LoaderArgs) {
   const session = await getSession(request.headers.get("Cookie"));
@@ -21,8 +19,12 @@ export async function loader({ request }: Route.LoaderArgs) {
     return redirect("/");
   }
 
+  const recaptchaV3SiteKey = config.recaptchaV3SiteKey;
   return data(
-    { error: session.get("error") },
+    {
+      recaptchaV3SiteKey: recaptchaV3SiteKey,
+      error: session.get("error")
+    },
     {
       headers: {
         "Set-Cookie": await commitSession(session),
@@ -113,6 +115,8 @@ function LoginForm({ loaderData }: Route.ComponentProps) {
   const fetcher = useFetcher();
   const formRef = useRef<HTMLFormElement>(null);
 
+  const {error} = loaderData;
+
   const handleLogin = useCallback(
     async (event: FormEvent) => {
       event.preventDefault();
@@ -122,7 +126,7 @@ function LoginForm({ loaderData }: Route.ComponentProps) {
       const token = await executeRecaptcha("login");
       const formData = new FormData(formRef.current);
       formData.append("token", token);
-      await fetcher.submit(formData, {method: "POST"});
+      await fetcher.submit(formData, { method: "POST" });
     },
     [executeRecaptcha, fetcher],
   );
@@ -134,9 +138,9 @@ function LoginForm({ loaderData }: Route.ComponentProps) {
           Sign in to your account
         </h1>
 
-        {loaderData?.error && (
+        {error && (
           <div className="mb-4 text-red-600 text-sm text-center">
-            {loaderData.error}
+            {error}
           </div>
         )}
 
@@ -182,6 +186,28 @@ function LoginForm({ loaderData }: Route.ComponentProps) {
           </div>
         </fetcher.Form>
 
+        {/* Divider */}
+        <div className="my-4 flex items-center justify-center">
+          <span className="text-gray-400 text-sm">or</span>
+        </div>
+
+        {/* Google Login Button */}
+        <div>
+          <a
+            href="/auth/google"
+            className="w-full inline-block text-center bg-white border border-gray-300 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-50 transition"
+          >
+            <div className="flex items-center justify-center gap-2">
+              <img
+                src="https://developers.google.com/identity/images/g-logo.png"
+                alt="Google"
+                className="w-5 h-5"
+              />
+              <span>Sign in with Google</span>
+            </div>
+          </a>
+        </div>
+
         <div className="mt-6 text-center">
           <p className="text-sm text-gray-600">
             Don't have an account?{" "}
@@ -199,12 +225,15 @@ function LoginForm({ loaderData }: Route.ComponentProps) {
 }
 
 export default function Login(props: Route.ComponentProps) {
-  if (!RECAPTCHA_V3_SITE_KEY) {
+  const {recaptchaV3SiteKey} = props.loaderData;
+
+  console.log("recaptchaV3SiteKey", recaptchaV3SiteKey);
+  if (!recaptchaV3SiteKey) {
     console.error("reCAPTCHA Site Key not found.");
     return <div>reCAPTCHA not configured.</div>;
   }
   return (
-    <GoogleReCaptchaProvider reCaptchaKey={RECAPTCHA_V3_SITE_KEY}>
+    <GoogleReCaptchaProvider reCaptchaKey={recaptchaV3SiteKey}>
       <LoginForm {...props} />
     </GoogleReCaptchaProvider>
   );

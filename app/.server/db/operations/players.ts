@@ -11,7 +11,7 @@ export type Player =
 export async function getByUserId(userId: string): Promise<Player | null> {
   const res = await pool.query(
     `SELECT id FROM players WHERE user_id = $1 LIMIT 1`,
-    [userId]
+    [userId],
   );
 
   if (res.rowCount === 0) return null;
@@ -21,7 +21,7 @@ export async function getByUserId(userId: string): Promise<Player | null> {
 export async function getByGuestId(guestId: string): Promise<Player | null> {
   const res = await pool.query(
     `SELECT id FROM players WHERE guest_id = $1 LIMIT 1`,
-    [guestId]
+    [guestId],
   );
 
   if (res.rowCount === 0) return null;

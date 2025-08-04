@@ -9,11 +9,12 @@ services:
     restart: always
     environment:
       DB_HOST: db
-      DB_PORT: 5432
-      DB_USER: myuser
-      DB_PASSWORD: mypassword
-      DB_NAME: mydatabase
-      RECAPTCHA_V3_SECRET_KEY: 6LfOn5crAAAAAAEmy9MkZNlBR_0MAzKs5-J8KKcR
+      DB_PORT: ${DB_PORT}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: ${DB_NAME}
+      RECAPTCHA_V3_SITE_KEY: ${RECAPTCHA_V3_SITE_KEY}
+      RECAPTCHA_V3_SECRET_KEY: ${RECAPTCHA_V3_SECRET_KEY}
     ports:
       - "3000:3000"
     networks:
@@ -26,24 +27,24 @@ services:
     depends_on:
       db:
         condition: service_healthy
-    restart: always
+    restart: "on-failure"
     environment:
-      DATABASE_URL: postgres://myuser:mypassword@db:5432/mydatabase
+      DATABASE_URL: postgres://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}
     command: npm run migrate
 
   db:
     image: postgres:17.5
     restart: always
     environment:
-      POSTGRES_USER: myuser
-      POSTGRES_PASSWORD: mypassword
-      POSTGRES_DB: mydatabase
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
     volumes:
       - db-data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U myuser"]
+      test: ["CMD-SHELL", "pg_isready -d ${DB_NAME} -U ${DB_USER}"]
       interval: 5s
       retries: 5
 

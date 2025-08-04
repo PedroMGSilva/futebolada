@@ -1,5 +1,4 @@
 import { createCookieSessionStorage } from "react-router";
-import type { User } from "~/.server/domain/auth";
 
 type SessionData = {
   userId: string;

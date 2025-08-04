@@ -144,7 +144,7 @@ export async function getGameById(gameId: string): Promise<Game | null> {
     WHERE g.id = $1
     ORDER BY pe.position
     `,
-    [gameId]
+    [gameId],
   );
 
   const games = parseGameRows(res.rows);
@@ -166,14 +166,25 @@ interface CreateGameInput {
 }
 
 export async function createGame(input: CreateGameInput): Promise<Game> {
-
   const result = await pool.query<Game>(
     `
     INSERT INTO games (id, date, start_time, end_time, latitude, longitude, location, max_players, price, created_at, created_by, updated_at, updated_by)
     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW(), $10, NOW(), $11)
     RETURNING id, date, start_time as "startTime", end_time as "endTime", latitude, longitude, location, max_players as "maxPlayers", price
   `,
-    [input.id, input.date, input.startTime, input.endTime, input.latitude, input.longitude, input.location, input.maxPlayers, input.price, input.createdBy, input.updatedBy],
+    [
+      input.id,
+      input.date,
+      input.startTime,
+      input.endTime,
+      input.latitude,
+      input.longitude,
+      input.location,
+      input.maxPlayers,
+      input.price,
+      input.createdBy,
+      input.updatedBy,
+    ],
   );
 
   return result.rows[0];
@@ -199,7 +210,7 @@ export async function enrollInGame(input: EnrollInGameInput): Promise<void> {
       SELECT 1 FROM players_enrolled
       WHERE game_id = $1 AND position = $2
       `,
-      [input.gameId, input.position]
+      [input.gameId, input.position],
     );
 
     if (slotTaken !== null && slotTaken > 0) {
@@ -212,7 +223,7 @@ export async function enrollInGame(input: EnrollInGameInput): Promise<void> {
       SELECT 1 FROM players_enrolled
       WHERE game_id = $1 AND player_id = $2
       `,
-      [input.gameId, input.playerId]
+      [input.gameId, input.playerId],
     );
 
     if (alreadyEnrolled !== null && alreadyEnrolled > 0) {
@@ -225,7 +236,14 @@ export async function enrollInGame(input: EnrollInGameInput): Promise<void> {
       INSERT INTO players_enrolled (id, player_id, game_id, position, created_at, created_by, updated_at, updated_by)
       VALUES ($1, $2, $3, $4, NOW(), $5, NOW(), $6)
       `,
-      [input.playerEnrolledId, input.playerId, input.gameId, input.position, input.actorId, input.actorId]
+      [
+        input.playerEnrolledId,
+        input.playerId,
+        input.gameId,
+        input.position,
+        input.actorId,
+        input.actorId,
+      ],
     );
 
     await client.query("COMMIT");
@@ -245,9 +263,8 @@ interface unenrollFromGameInput {
 export async function unenrollFromGame(
   input: unenrollFromGameInput,
 ): Promise<void> {
-
   await pool.query(
     `DELETE FROM players_enrolled WHERE game_id = $1 AND player_id = $2`,
-    [input.gameId, input.playerId]
+    [input.gameId, input.playerId],
   );
 }

@@ -44,9 +44,9 @@ export const up = (pgm) => {
       default: pgm.func("current_timestamp"),
     },
     created_by: {
-      type: 'uuid',
-      references: 'users(id)',
-      onDelete: 'SET NULL'
+      type: "uuid",
+      references: "users(id)",
+      onDelete: "SET NULL",
     },
     updated_at: {
       type: "timestamp",
@@ -54,9 +54,9 @@ export const up = (pgm) => {
       default: pgm.func("current_timestamp"),
     },
     updated_by: {
-      type: 'uuid',
-      references: 'users(id)',
-      onDelete: 'SET NULL'
+      type: "uuid",
+      references: "users(id)",
+      onDelete: "SET NULL",
     },
   });
 

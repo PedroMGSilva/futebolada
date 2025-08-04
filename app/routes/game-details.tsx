@@ -14,7 +14,7 @@ export async function loader({ request, params }: Route.LoaderArgs) {
   const session = await getSession(request.headers.get("Cookie"));
   const gameId = params.gameId;
 
-  const userId = session.get("userId")!!;
+  const userId = session.get("userId")!;
   const game = await store.games.getGameById(gameId);
   const guests = await store.guests.getAllGuests();
 
@@ -27,7 +27,7 @@ export async function loader({ request, params }: Route.LoaderArgs) {
     .filter((id): id is string => !!id); // remove nulls and undefined
 
   const availableGuests = guests.filter(
-    (guest) => !enrolledGuestIds.includes(guest.id)
+    (guest) => !enrolledGuestIds.includes(guest.id),
   );
 
   return { game, guests: availableGuests, userId };
@@ -35,7 +35,7 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 
 export async function action({ request, params }: Route.ActionArgs) {
   const session = await getSession(request.headers.get("Cookie"));
-  const userId = session.get("userId")!!;
+  const userId = session.get("userId")!;
 
   if (!userId) return redirect("/login");
 
@@ -51,18 +51,23 @@ export async function action({ request, params }: Route.ActionArgs) {
       throw new Response("Missing playerEnrolledId", { status: 400 });
     }
 
-    const playerEnrolled = await store.playersEnrolled.getPlayerEnrolledById(playerEnrolledId);
+    const playerEnrolled =
+      await store.playersEnrolled.getPlayerEnrolledById(playerEnrolledId);
     if (!playerEnrolled) {
       throw new Response("Player not found", { status: 400 });
     }
 
-    if(playerEnrolled.createdBy !== userId) {
+    if (playerEnrolled.createdBy !== userId) {
       console.log("ai o crl", playerEnrolled.createdBy, userId);
-      throw new Response("You are not authorized to unenroll this player", { status: 403 });
+      throw new Response("You are not authorized to unenroll this player", {
+        status: 403,
+      });
     }
 
-    await store.games.unenrollFromGame({ gameId, playerId: playerEnrolled.playerId });
-
+    await store.games.unenrollFromGame({
+      gameId,
+      playerId: playerEnrolled.playerId,
+    });
   } else if (actionType === "enroll") {
     const game = await store.games.getGameById(gameId);
     if (!game) throw new Response("Game not found", { status: 404 });
@@ -83,7 +88,6 @@ export async function action({ request, params }: Route.ActionArgs) {
       position,
       actorId: userId,
     });
-
   } else if (actionType === "enrollGuest") {
     const game = await store.games.getGameById(gameId);
     if (!game) throw new Response("Game not found", { status: 404 });
@@ -99,7 +103,7 @@ export async function action({ request, params }: Route.ActionArgs) {
       throw new Response("Invalid position", { status: 400 });
     }
 
-    let guest = await store.guests.findGuestByName({ name: guestName });
+    const guest = await store.guests.findGuestByName({ name: guestName });
     let guestId: string, playerId: string;
 
     console.log("o guest", guest);
@@ -116,7 +120,8 @@ export async function action({ request, params }: Route.ActionArgs) {
       guestId = guest.id;
       const player = await store.players.getByGuestId(guestId);
       console.log("o player", player);
-      if (!player) throw new Response("Player not found for guest", { status: 400 });
+      if (!player)
+        throw new Response("Player not found for guest", { status: 400 });
       playerId = player.id;
     }
 
@@ -139,7 +144,7 @@ export default function GameDetails({ loaderData }: Route.ComponentProps) {
   const [guestName, setGuestName] = useState("");
 
   const isEnrolled = game.playersEnrolled.some(
-    (p) => p.player.user?.id === userId
+    (p) => p.player.user?.id === userId,
   );
 
   return (
@@ -197,11 +202,10 @@ export default function GameDetails({ loaderData }: Route.ComponentProps) {
             {[...Array(game.maxPlayers)].map((_, i) => {
               const position = i + 1;
               const playerEnrolled = game.playersEnrolled.find(
-                (p) => p.position === position
+                (p) => p.position === position,
               );
 
-              const canRemove =
-                playerEnrolled?.createdBy === userId;
+              const canRemove = playerEnrolled?.createdBy === userId;
 
               return (
                 <li
@@ -220,11 +224,7 @@ export default function GameDetails({ loaderData }: Route.ComponentProps) {
 
                   {canRemove && (
                     <Form method="post">
-                      <input
-                        type="hidden"
-                        name="_action"
-                        value="unenroll"
-                      />
+                      <input type="hidden" name="_action" value="unenroll" />
                       <input
                         type="hidden"
                         name="playerEnrolledId"
@@ -251,7 +251,11 @@ export default function GameDetails({ loaderData }: Route.ComponentProps) {
                             : "opacity-0 invisible h-0 overflow-hidden"
                         }`}
                       >
-                        <input type="hidden" name="_action" value="enrollGuest" />
+                        <input
+                          type="hidden"
+                          name="_action"
+                          value="enrollGuest"
+                        />
                         <input type="hidden" name="position" value={position} />
                         <input
                           name="guestName"
@@ -294,8 +298,16 @@ export default function GameDetails({ loaderData }: Route.ComponentProps) {
                         <div className="flex gap-2">
                           {!isEnrolled && (
                             <Form method="post">
-                              <input type="hidden" name="_action" value="enroll" />
-                              <input type="hidden" name="position" value={position} />
+                              <input
+                                type="hidden"
+                                name="_action"
+                                value="enroll"
+                              />
+                              <input
+                                type="hidden"
+                                name="position"
+                                value={position}
+                              />
                               <button
                                 type="submit"
                                 className="text-sm text-green-600 hover:text-green-800"
