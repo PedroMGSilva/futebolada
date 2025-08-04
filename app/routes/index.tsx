@@ -6,6 +6,7 @@ import {
   ClockIcon,
   UserGroupIcon,
 } from "@heroicons/react/16/solid";
+import {getSession} from "~/.server/session";
 
 // eslint-disable-next-line
 export function meta({}: Route.MetaArgs) {
@@ -16,25 +17,31 @@ export function meta({}: Route.MetaArgs) {
 }
 
 // eslint-disable-next-line
-export async function loader({ params }: Route.LoaderArgs) {
+export async function loader({ request }: Route.LoaderArgs) {
+  const session = await getSession(request.headers.get("Cookie"));
   const { games } = await store.games.getUpcomingGames();
 
-  return { games };
+  const user = (await store.users.getUserById(session.get("userId")!))!;
+  const role = user.role;
+
+  return { games, role };
 }
 
 export default function Index({ loaderData }: Route.ComponentProps) {
-  const { games } = loaderData;
+  const { games, role } = loaderData;
 
   return (
     <main className="p-6 max-w-2xl mx-auto">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Upcoming Matches</h1>
-        <Link
-          to="/games/create"
-          className="inline-block bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition"
-        >
-          + Add Game
-        </Link>
+        {role === "admin" && (
+          <Link
+            to="/games/create"
+            className="inline-block bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition"
+          >
+            + Add Game
+          </Link>
+        )}
       </div>
       <ul className="space-y-4">
         {games.map((game) => (

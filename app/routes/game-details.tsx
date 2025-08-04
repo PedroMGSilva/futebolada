@@ -58,7 +58,6 @@ export async function action({ request, params }: Route.ActionArgs) {
     }
 
     if (playerEnrolled.createdBy !== userId) {
-      console.log("ai o crl", playerEnrolled.createdBy, userId);
       throw new Response("You are not authorized to unenroll this player", {
         status: 403,
       });

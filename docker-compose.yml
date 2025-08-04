@@ -29,7 +29,7 @@ services:
         condition: service_healthy
     restart: "on-failure"
     environment:
-      DATABASE_URL: postgres://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}
+      DATABASE_URL: postgres://${DB_USER}:${DB_PASSWORD}@db:${DB_PORT}/${DB_NAME}
     command: npm run migrate
 
   db:

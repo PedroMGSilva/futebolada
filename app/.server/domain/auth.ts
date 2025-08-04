@@ -17,7 +17,7 @@ export async function validateCredentials(
 ): Promise<User> {
   const { email, password } = credentials;
 
-  const user = await store.users.getUser(email);
+  const user = await store.users.getUserByEmail(email);
 
   if (!user) {
     throw new Error("Invalid email or password");

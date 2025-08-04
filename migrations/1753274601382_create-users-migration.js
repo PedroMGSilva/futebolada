@@ -1,6 +1,10 @@
 export const shorthands = undefined;
 
 export const up = (pgm) => {
+  // Create the ENUM type for roles
+  pgm.createType("user_role", ["admin", "user"]);
+
+  // Create the users table
   pgm.createTable("users", {
     id: {
       type: "uuid",
@@ -18,6 +22,11 @@ export const up = (pgm) => {
     password: {
       type: "text",
       notNull: true,
+    },
+    role: {
+      type: "user_role",
+      notNull: true,
+      default: "user", // set default role
     },
     created_at: {
       type: "timestamp",
@@ -42,6 +51,7 @@ export const up = (pgm) => {
   });
 };
 
-export async function down(pgm) {
+export const down = (pgm) => {
   pgm.dropTable("users");
-}
+  pgm.dropType("user_role");
+};

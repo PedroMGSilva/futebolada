@@ -66,7 +66,7 @@ export async function action({ request }: Route.ActionArgs) {
       });
     }
 
-    const user = await store.users.getUser(email);
+    const user = await store.users.getUserByEmail(email);
 
     if (!user) {
       session.flash("error", "Invalid email or password.");
@@ -227,7 +227,6 @@ function LoginForm({ loaderData }: Route.ComponentProps) {
 export default function Login(props: Route.ComponentProps) {
   const {recaptchaV3SiteKey} = props.loaderData;
 
-  console.log("recaptchaV3SiteKey", recaptchaV3SiteKey);
   if (!recaptchaV3SiteKey) {
     console.error("reCAPTCHA Site Key not found.");
     return <div>reCAPTCHA not configured.</div>;

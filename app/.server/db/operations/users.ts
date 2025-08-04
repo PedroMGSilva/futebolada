@@ -6,20 +6,40 @@ type User = {
   email: string;
   name: string;
   password: string;
+  role: "user" | "admin";
 };
 
-export async function getUser(email: string): Promise<User | null> {
+export async function getUserByEmail(email: string): Promise<User | null> {
   const result = await pool.query<User>(
     `
       SELECT
           u.id,
           u.email,
           u.name,
-          u.password
+          u.password,
+          u.role
       FROM users u
       WHERE u.email = $1
     `,
     [email],
+  );
+
+  return result.rows[0] ?? null;
+}
+
+export async function getUserById(id: string): Promise<User | null> {
+  const result = await pool.query<User>(
+    `
+      SELECT
+          u.id,
+          u.email,
+          u.name,
+          u.password,
+          u.role
+      FROM users u
+      WHERE u.id = $1
+    `,
+    [id],
   );
 
   return result.rows[0] ?? null;
@@ -59,11 +79,11 @@ export async function createUserAndPlayer(
 
     const user = await client.query(
       `
-      INSERT INTO users (id, email, name, password, created_at, created_by, updated_at, updated_by)
-      VALUES ($1, $2, $3, $4, NOW(), $5, NOW(), $6)
+      INSERT INTO users (id, email, name, password, role, created_at, created_by, updated_at, updated_by)
+      VALUES ($1, $2, $3, $4, $5, NOW(), $6, NOW(), $7)
       RETURNING id, email, name
     `,
-      [input.userId, input.email, input.name, input.password, null, null],
+      [input.userId, input.email, input.name, input.password, "user", null, null],
     );
 
     const player = await client.query(
