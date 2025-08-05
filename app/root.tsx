@@ -23,6 +23,25 @@ export const links: Route.LinksFunction = () => [
   },
 ];
 
+// eslint-disable-next-line
+export function meta({}: Route.MetaArgs) {
+  return [
+    { title: "Futebolada" },
+    {
+      property: "og:title",
+      content: "Futebolada",
+    },
+    {
+      name: "description",
+      content: "Organizer of football games between friends",
+    },
+    {
+      name: "og:image",
+      content: "https://futebolada.org/images/logo.png",
+    },
+  ];
+}
+
 export function Layout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">

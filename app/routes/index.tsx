@@ -9,14 +9,6 @@ import {
 import { getSession } from "~/.server/session";
 
 // eslint-disable-next-line
-export function meta({}: Route.MetaArgs) {
-  return [
-    { title: "New React Router App" },
-    { name: "description", content: "Welcome to React Router!" },
-  ];
-}
-
-// eslint-disable-next-line
 export async function loader({ request, params }: Route.LoaderArgs) {
   const session = await getSession(request.headers.get("Cookie"));
 
