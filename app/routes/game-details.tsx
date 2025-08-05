@@ -105,7 +105,6 @@ export async function action({ request, params }: Route.ActionArgs) {
     const guest = await store.guests.findGuestByName({ name: guestName });
     let guestId: string, playerId: string;
 
-    console.log("o guest", guest);
     if (!guest) {
       guestId = uuidv4();
       playerId = uuidv4();
@@ -118,7 +117,6 @@ export async function action({ request, params }: Route.ActionArgs) {
     } else {
       guestId = guest.id;
       const player = await store.players.getByGuestId(guestId);
-      console.log("o player", player);
       if (!player)
         throw new Response("Player not found for guest", { status: 400 });
       playerId = player.id;

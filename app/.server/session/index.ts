@@ -1,4 +1,5 @@
 import { createCookieSessionStorage } from "react-router";
+import {config} from "~/.server/config";
 
 type SessionData = {
   userId: string;
@@ -21,10 +22,10 @@ const { getSession, commitSession, destroySession } =
       //
       // expires: new Date(Date.now() + 60_000),
       httpOnly: true,
-      maxAge: 3600,
+      maxAge: 31536000, // 1 year in seconds
       path: "/",
       sameSite: "lax",
-      secrets: ["s3cret1"],
+      secrets: [config.session.secret],
       secure: true,
     },
   });

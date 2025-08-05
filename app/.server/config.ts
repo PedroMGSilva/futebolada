@@ -28,4 +28,7 @@ export const config = {
     clientSecret: getEnv("FACEBOOK_CLIENT_SECRET"),
     redirectUri: getEnv("FACEBOOK_REDIRECT_URI"),
   },
+  session: {
+    secret: getEnv("SESSION_SECRET"),
+  }
 };
