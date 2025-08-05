@@ -1,7 +1,6 @@
-# Block all crawlers by default
 User-agent: *
-Disallow: /
+Disallow:
 
-# Allow Facebook crawler
 User-agent: facebookexternalhit
 Disallow:
+
