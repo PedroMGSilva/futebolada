@@ -13,7 +13,6 @@ export default [
     route("logout", "routes/logout.tsx"),
   ]),
   route("login", "routes/login.tsx"),
-  route("register", "routes/register.tsx"),
   route("auth/google", "routes/auth-google.tsx"),
   route("auth/google/callback", "routes/auth-google-callback.tsx"),
   route("auth/facebook", "routes/auth-facebook.tsx"),

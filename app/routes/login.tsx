@@ -1,15 +1,6 @@
-import { data, Link, redirect, useFetcher } from "react-router";
-import { commitSession, getSession } from "~/.server/session";
+import { redirect } from "react-router";
+import { getSession } from "~/.server/session";
 import type { Route } from "./+types/login";
-import { validateRecaptchaToken } from "~/.server/domain/captcha";
-import {
-  GoogleReCaptchaProvider,
-  useGoogleReCaptcha,
-} from "react-google-recaptcha-v3";
-import { type FormEvent, useCallback, useRef } from "react";
-import { store } from "~/.server/db/operations";
-import bcrypt from "bcrypt";
-import { config } from "~/.server/config";
 
 export async function loader({ request }: Route.LoaderArgs) {
   const session = await getSession(request.headers.get("Cookie"));
@@ -18,181 +9,18 @@ export async function loader({ request }: Route.LoaderArgs) {
     // Redirect to the home page if they are already signed in.
     return redirect("/");
   }
-
-  const recaptchaV3SiteKey = config.recaptchaV3.siteKey;
-  return data(
-    {
-      recaptchaV3SiteKey: recaptchaV3SiteKey,
-      error: session.get("error"),
-    },
-    {
-      headers: {
-        "Set-Cookie": await commitSession(session),
-      },
-    },
-  );
 }
 
-export async function action({ request }: Route.ActionArgs) {
-  const session = await getSession(request.headers.get("Cookie"));
-  const form = await request.formData();
-  const email = form.get("email");
-  const password = form.get("password");
-  const token = form.get("token");
-
-  // Validate input types
-  if (
-    typeof email !== "string" ||
-    typeof password !== "string" ||
-    typeof token !== "string"
-  ) {
-    session.flash("error", "Invalid form submission.");
-    return redirect("/login", {
-      headers: {
-        "Set-Cookie": await commitSession(session),
-      },
-    });
-  }
-
-  try {
-    await validateRecaptchaToken(token);
-    // Trim and check for empty values
-    if (email.trim() === "" || password.trim() === "") {
-      session.flash("error", "Email and password are required.");
-      return redirect("/login", {
-        headers: {
-          "Set-Cookie": await commitSession(session),
-        },
-      });
-    }
-
-    const user = await store.users.getUserByEmail(email);
-
-    if (!user) {
-      session.flash("error", "Invalid email or password.");
-      return redirect("/login", {
-        headers: {
-          "Set-Cookie": await commitSession(session),
-        },
-      });
-    }
-
-    const isValid = await bcrypt.compare(password, user.password);
-
-    if (!isValid) {
-      session.flash("error", "Invalid email or password.");
-      return redirect("/login", {
-        headers: {
-          "Set-Cookie": await commitSession(session),
-        },
-      });
-    }
-
-    session.set("userId", user.id);
-
-    // Login succeeded, send them to the home page.
-    return redirect("/", {
-      headers: {
-        "Set-Cookie": await commitSession(session),
-      },
-    });
-  } catch (error: unknown) {
-    let errorMessage = "An unknown error occurred.";
-    if (error instanceof Error) {
-      errorMessage = error.message;
-    }
-    session.flash("error", errorMessage);
-    return redirect("/login", {
-      headers: {
-        "Set-Cookie": await commitSession(session),
-      },
-    });
-  }
-}
-
-function LoginForm({ loaderData }: Route.ComponentProps) {
-  const { executeRecaptcha } = useGoogleReCaptcha();
-  const fetcher = useFetcher();
-  const formRef = useRef<HTMLFormElement>(null);
-
-  const { error } = loaderData;
-
-  const handleLogin = useCallback(
-    async (event: FormEvent) => {
-      event.preventDefault();
-      if (!executeRecaptcha || !formRef.current) {
-        return;
-      }
-      const token = await executeRecaptcha("login");
-      const formData = new FormData(formRef.current);
-      formData.append("token", token);
-      await fetcher.submit(formData, { method: "POST" });
-    },
-    [executeRecaptcha, fetcher],
-  );
-
+export default function Login() {
   return (
     <div className="min-h-screen flex items-center justify-center">
-      <div className="shadow-md rounded-lg p-8 w-full max-w-md">
-        <h1 className="text-2xl font-bold text-center mb-6">
-          Sign in to your account
-        </h1>
+      <div className="shadow-md rounded-lg p-8 w-full max-w-md text-center">
+        <h1 className="text-2xl font-bold mb-6">Sign in to Futebolada</h1>
 
-        {error && (
-          <div className="mb-4 text-red-600 text-sm text-center">{error}</div>
-        )}
-
-        <fetcher.Form
-          ref={formRef}
-          onSubmit={handleLogin}
-          className="space-y-6"
-        >
-          <div>
-            <label htmlFor="email" className="block text-sm font-medium">
-              Email
-            </label>
-            <input
-              type="email"
-              name="email"
-              id="email"
-              className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              required
-            />
-          </div>
-
-          <div>
-            <label htmlFor="password" className="block text-sm font-medium">
-              Password
-            </label>
-            <input
-              type="password"
-              name="password"
-              id="password"
-              className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              required
-            />
-          </div>
-
-          <div>
-            <button
-              type="submit"
-              disabled={fetcher.state !== "idle"}
-              className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition disabled:opacity-50"
-            >
-              Sign In
-            </button>
-          </div>
-        </fetcher.Form>
-
-        {/* Divider */}
-        <div className="my-4 flex items-center justify-center">
-          <span className="text-gray-400 text-sm">or</span>
-        </div>
-
-        <div>
+        <div className="space-y-4">
           <a
             href="/auth/google"
-            className="w-full inline-block text-center bg-white border border-gray-300 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-50 transition"
+            className="w-full inline-block bg-white border border-gray-300 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-50 transition"
           >
             <div className="flex items-center justify-center gap-2">
               <img
@@ -200,15 +28,13 @@ function LoginForm({ loaderData }: Route.ComponentProps) {
                 alt="Google"
                 className="w-5 h-5"
               />
-              <span>Sign in with Google</span>
+              <span>Continue with Google</span>
             </div>
           </a>
-        </div>
 
-        <div className="mt-4">
           <a
             href="/auth/facebook"
-            className="w-full inline-block text-center bg-[#1877F2] text-white py-2 px-4 rounded-md hover:bg-[#145DBF] transition"
+            className="w-full inline-block bg-[#1877F2] text-white py-2 px-4 rounded-md hover:bg-[#145DBF] transition"
           >
             <div className="flex items-center justify-center gap-2">
               <img
@@ -216,37 +42,11 @@ function LoginForm({ loaderData }: Route.ComponentProps) {
                 alt="Facebook"
                 className="w-5 h-5 rounded-sm"
               />
-              <span>Sign in with Facebook</span>
+              <span>Continue with Facebook</span>
             </div>
           </a>
         </div>
-
-        <div className="mt-6 text-center">
-          <p className="text-sm text-gray-600">
-            Don't have an account?{" "}
-            <Link
-              to="/register"
-              className="font-medium text-blue-600 hover:text-blue-500"
-            >
-              Sign up
-            </Link>
-          </p>
-        </div>
       </div>
     </div>
-  );
-}
-
-export default function Login(props: Route.ComponentProps) {
-  const { recaptchaV3SiteKey } = props.loaderData;
-
-  if (!recaptchaV3SiteKey) {
-    console.error("reCAPTCHA Site Key not found.");
-    return <div>reCAPTCHA not configured.</div>;
-  }
-  return (
-    <GoogleReCaptchaProvider reCaptchaKey={recaptchaV3SiteKey}>
-      <LoginForm {...props} />
-    </GoogleReCaptchaProvider>
   );
 }

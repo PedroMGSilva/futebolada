@@ -1,4 +1,4 @@
-import type { Route } from "../../.react-router/types/app/routes/+types/register";
+import type { Route } from "./+types/auth-google-callback";
 import { getSession, commitSession } from "~/.server/session";
 import { redirect } from "react-router";
 import { google } from "googleapis";
@@ -32,8 +32,14 @@ export async function loader({ request }: Route.LoaderArgs) {
     throw new Error("Google user info does not contain an email.");
   }
 
-  // Check if user already exists in DB by email
-  let user = await store.users.getUserByEmail(userinfo.data.email); //FIXME IT SHUOLD FIND BY AUTH PROVIDER ID
+  if (!userinfo.data.id) {
+    throw new Error("Google user info does not contain an id.");
+  }
+
+  let user = await store.users.getUserByAuthProviderId(
+    userinfo.data.id,
+    "google",
+  );
 
   if (!user) {
     const userId = uuidv4();
@@ -46,7 +52,7 @@ export async function loader({ request }: Route.LoaderArgs) {
       name: userinfo.data.name || "No name",
       password: null,
       authProvider: "google",
-      authProviderId: userinfo.data.id || null,
+      authProviderId: userinfo.data.id,
     });
 
     user = createdUser;

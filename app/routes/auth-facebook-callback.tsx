@@ -1,4 +1,4 @@
-import type { Route } from "../../.react-router/types/app/routes/+types/register";
+import type { Route } from "./+types/auth-facebook-callback";
 import { commitSession, getSession } from "~/.server/session";
 import { redirect } from "react-router";
 import {
@@ -27,11 +27,17 @@ export async function loader({ request }: Route.LoaderArgs) {
   const userProfile = await getFacebookUserProfile(accessToken);
 
   if (!userProfile.email) {
-    throw new Error("Google user info does not contain an email.");
+    throw new Error("Facebook user profile does not contain an email.");
   }
 
-  // Check if user already exists in DB by email
-  let user = await store.users.getUserByEmail(userProfile.email); //FIXME IT SHUOLD FIND BY AUTH PROVIDER ID
+  if (!userProfile.id) {
+    throw new Error("Facebook user profile does not contain an id.");
+  }
+
+  let user = await store.users.getUserByAuthProviderId(
+    userProfile.id,
+    "facebook",
+  );
 
   if (!user) {
     const userId = uuidv4();

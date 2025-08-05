@@ -1,4 +1,4 @@
-import type { Route } from "../../.react-router/types/app/routes/+types/register";
+import type { Route } from "./+types/auth-google";
 import { getSession } from "~/.server/session";
 import { redirect } from "react-router";
 import { google } from "googleapis";

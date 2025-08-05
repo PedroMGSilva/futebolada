@@ -1,6 +1,8 @@
 import pool from "~/.server/db/client";
 import type { Player } from "~/.server/db/operations/players";
 
+type AuthProvider = "google" | "local" | "facebook";
+
 type User = {
   id: string;
   email: string;
@@ -45,13 +47,34 @@ export async function getUserById(id: string): Promise<User | null> {
   return result.rows[0] ?? null;
 }
 
+export async function getUserByAuthProviderId(
+  id: string,
+  authProvider: AuthProvider,
+): Promise<User | null> {
+  const result = await pool.query<User>(
+    `
+      SELECT
+          u.id,
+          u.email,
+          u.name,
+          u.password,
+          u.role
+      FROM users u
+      WHERE u.auth_provider_id = $1 AND u.auth_provider = $2
+    `,
+    [id, authProvider],
+  );
+
+  return result.rows[0] ?? null;
+}
+
 interface CreateUserAndPlayerInput {
   userId: string;
   playerId: string;
   email: string;
   name: string;
   password: string | null;
-  authProvider: "google" | "local" | "facebook";
+  authProvider: AuthProvider;
   authProviderId: string | null;
 }
 
