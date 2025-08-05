@@ -23,7 +23,7 @@ const { getSession, commitSession, destroySession } =
       httpOnly: true,
       maxAge: 3600,
       path: "/",
-      sameSite: "strict",
+      sameSite: "lax",
       secrets: ["s3cret1"],
       secure: true,
     },

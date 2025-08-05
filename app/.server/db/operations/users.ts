@@ -50,7 +50,9 @@ interface CreateUserAndPlayerInput {
   playerId: string;
   email: string;
   name: string;
-  password: string;
+  password: string | null;
+  authProvider: "google" | "local" | "facebook";
+  authProviderId: string | null;
 }
 
 interface CreateUserAndPlayerOutput {
@@ -79,11 +81,21 @@ export async function createUserAndPlayer(
 
     const user = await client.query(
       `
-      INSERT INTO users (id, email, name, password, role, created_at, created_by, updated_at, updated_by)
-      VALUES ($1, $2, $3, $4, $5, NOW(), $6, NOW(), $7)
+      INSERT INTO users (id, email, name, password, role, auth_provider, auth_provider_id, created_at, created_by, updated_at, updated_by)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), $8, NOW(), $9)
       RETURNING id, email, name
     `,
-      [input.userId, input.email, input.name, input.password, "user", null, null],
+      [
+        input.userId,
+        input.email,
+        input.name,
+        input.password,
+        "user",
+        input.authProvider,
+        input.authProviderId,
+        null,
+        null,
+      ],
     );
 
     const player = await client.query(

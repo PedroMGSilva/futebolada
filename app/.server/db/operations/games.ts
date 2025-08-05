@@ -9,7 +9,7 @@ type PlayerEnrolled = {
   player: Player;
   createdBy: string;
 };
-type Game = {
+export type Game = {
   id: string;
   date: string;
   startTime: string;

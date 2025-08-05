@@ -1,8 +1,8 @@
 export const shorthands = undefined;
 
 export const up = (pgm) => {
-  // Create the ENUM type for roles
   pgm.createType("user_role", ["admin", "user"]);
+  pgm.createType("user_auth_provider", ["local", "google", "facebook"]);
 
   // Create the users table
   pgm.createTable("users", {
@@ -21,12 +21,19 @@ export const up = (pgm) => {
     },
     password: {
       type: "text",
-      notNull: true,
     },
     role: {
       type: "user_role",
       notNull: true,
-      default: "user", // set default role
+      default: "user",
+    },
+    auth_provider: {
+      type: "user_auth_provider",
+      notNull: true,
+      default: "local",
+    },
+    auth_provider_id: {
+      type: "text",
     },
     created_at: {
       type: "timestamp",
@@ -49,9 +56,14 @@ export const up = (pgm) => {
       onDelete: "SET NULL",
     },
   });
+
+  pgm.addConstraint("users", "unique_auth_provider_and_id", {
+    unique: ["auth_provider", "auth_provider_id"],
+  });
 };
 
 export const down = (pgm) => {
   pgm.dropTable("users");
   pgm.dropType("user_role");
+  pgm.dropType("user_auth_provider");
 };

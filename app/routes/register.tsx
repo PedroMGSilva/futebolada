@@ -10,7 +10,7 @@ import { validateRecaptchaToken } from "~/.server/domain/captcha";
 import bcrypt from "bcrypt";
 import { v4 as uuidv4 } from "uuid";
 import { store } from "~/.server/db/operations";
-import {config} from "~/.server/config";
+import { config } from "~/.server/config";
 
 export async function loader({ request }: Route.LoaderArgs) {
   const session = await getSession(request.headers.get("Cookie"));
@@ -20,12 +20,12 @@ export async function loader({ request }: Route.LoaderArgs) {
     return redirect("/");
   }
 
-  const recaptchaV3SiteKey = config.recaptchaV3SiteKey;
+  const recaptchaV3SiteKey = config.recaptchaV3.siteKey;
 
   return data(
     {
       recaptchaV3SiteKey: recaptchaV3SiteKey,
-      error: session.get("error")
+      error: session.get("error"),
     },
     {
       headers: {
@@ -93,6 +93,8 @@ export async function action({ request }: Route.ActionArgs) {
       email,
       name,
       password: hashedPassword,
+      authProvider: "local",
+      authProviderId: null,
     });
 
     session.set("userId", user.id);
@@ -121,7 +123,7 @@ function RegisterForm({ loaderData }: Route.ComponentProps) {
   const fetcher = useFetcher();
   const formRef = useRef<HTMLFormElement>(null);
 
-  const {error} = loaderData;
+  const { error } = loaderData;
 
   const handleRegister = useCallback(
     async (event: FormEvent) => {
@@ -145,9 +147,7 @@ function RegisterForm({ loaderData }: Route.ComponentProps) {
         </h1>
 
         {error && (
-          <div className="mb-4 text-red-600 text-sm text-center">
-            {error}
-          </div>
+          <div className="mb-4 text-red-600 text-sm text-center">{error}</div>
         )}
 
         <fetcher.Form
@@ -238,7 +238,7 @@ function RegisterForm({ loaderData }: Route.ComponentProps) {
 }
 
 export default function Register(props: Route.ComponentProps) {
-  const {recaptchaV3SiteKey} = props.loaderData;
+  const { recaptchaV3SiteKey } = props.loaderData;
   if (!recaptchaV3SiteKey) {
     console.error("reCAPTCHA Site Key not found.");
     return <div>reCAPTCHA not configured.</div>;

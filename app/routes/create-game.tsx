@@ -15,13 +15,12 @@ type ActionData = {
   error?: string;
 };
 
-// eslint-disable-next-line
 export async function loader({ request }: Route.LoaderArgs) {
   const session = await getSession(request.headers.get("Cookie"));
 
   const user = (await store.users.getUserById(session.get("userId")!))!;
 
-  if(user.role !== "admin") {
+  if (user.role !== "admin") {
     throw new Response("You are not authorized to create games", {
       status: 403,
     });

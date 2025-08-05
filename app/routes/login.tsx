@@ -7,9 +7,9 @@ import {
   useGoogleReCaptcha,
 } from "react-google-recaptcha-v3";
 import { type FormEvent, useCallback, useRef } from "react";
-import {store} from "~/.server/db/operations";
+import { store } from "~/.server/db/operations";
 import bcrypt from "bcrypt";
-import {config} from "~/.server/config";
+import { config } from "~/.server/config";
 
 export async function loader({ request }: Route.LoaderArgs) {
   const session = await getSession(request.headers.get("Cookie"));
@@ -19,11 +19,11 @@ export async function loader({ request }: Route.LoaderArgs) {
     return redirect("/");
   }
 
-  const recaptchaV3SiteKey = config.recaptchaV3SiteKey;
+  const recaptchaV3SiteKey = config.recaptchaV3.siteKey;
   return data(
     {
       recaptchaV3SiteKey: recaptchaV3SiteKey,
-      error: session.get("error")
+      error: session.get("error"),
     },
     {
       headers: {
@@ -115,7 +115,7 @@ function LoginForm({ loaderData }: Route.ComponentProps) {
   const fetcher = useFetcher();
   const formRef = useRef<HTMLFormElement>(null);
 
-  const {error} = loaderData;
+  const { error } = loaderData;
 
   const handleLogin = useCallback(
     async (event: FormEvent) => {
@@ -139,9 +139,7 @@ function LoginForm({ loaderData }: Route.ComponentProps) {
         </h1>
 
         {error && (
-          <div className="mb-4 text-red-600 text-sm text-center">
-            {error}
-          </div>
+          <div className="mb-4 text-red-600 text-sm text-center">{error}</div>
         )}
 
         <fetcher.Form
@@ -191,7 +189,6 @@ function LoginForm({ loaderData }: Route.ComponentProps) {
           <span className="text-gray-400 text-sm">or</span>
         </div>
 
-        {/* Google Login Button */}
         <div>
           <a
             href="/auth/google"
@@ -204,6 +201,22 @@ function LoginForm({ loaderData }: Route.ComponentProps) {
                 className="w-5 h-5"
               />
               <span>Sign in with Google</span>
+            </div>
+          </a>
+        </div>
+
+        <div className="mt-4">
+          <a
+            href="/auth/facebook"
+            className="w-full inline-block text-center bg-[#1877F2] text-white py-2 px-4 rounded-md hover:bg-[#145DBF] transition"
+          >
+            <div className="flex items-center justify-center gap-2">
+              <img
+                src="https://www.facebook.com/images/fb_icon_325x325.png"
+                alt="Facebook"
+                className="w-5 h-5 rounded-sm"
+              />
+              <span>Sign in with Facebook</span>
             </div>
           </a>
         </div>
@@ -225,7 +238,7 @@ function LoginForm({ loaderData }: Route.ComponentProps) {
 }
 
 export default function Login(props: Route.ComponentProps) {
-  const {recaptchaV3SiteKey} = props.loaderData;
+  const { recaptchaV3SiteKey } = props.loaderData;
 
   if (!recaptchaV3SiteKey) {
     console.error("reCAPTCHA Site Key not found.");

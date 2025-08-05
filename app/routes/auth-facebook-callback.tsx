@@ -1,8 +1,10 @@
 import type { Route } from "../../.react-router/types/app/routes/+types/register";
-import { getSession, commitSession } from "~/.server/session";
+import { commitSession, getSession } from "~/.server/session";
 import { redirect } from "react-router";
-import { google } from "googleapis";
-import { config } from "~/.server/config";
+import {
+  getAccessToken,
+  getFacebookUserProfile,
+} from "~/.server/auth/facebook";
 import { store } from "~/.server/db/operations";
 import { v4 as uuidv4 } from "uuid";
 
@@ -14,39 +16,34 @@ export async function loader({ request }: Route.LoaderArgs) {
     return redirect("/");
   }
 
-  const oauth2Client = new google.auth.OAuth2(
-    config.googleOAuth.clientId,
-    config.googleOAuth.clientSecret,
-    config.googleOAuth.redirectUri,
-  );
-
   const url = new URL(request.url);
   const code = url.searchParams.get("code") || "";
-  const { tokens } = await oauth2Client.getToken(code);
-  oauth2Client.setCredentials(tokens);
 
-  const oauth2 = google.oauth2({ auth: oauth2Client, version: "v2" });
-  const userinfo = await oauth2.userinfo.get();
+  if (!code) {
+    throw new Error("No code provided");
+  }
 
-  if (!userinfo.data.email) {
+  const accessToken = await getAccessToken(code);
+  const userProfile = await getFacebookUserProfile(accessToken);
+
+  if (!userProfile.email) {
     throw new Error("Google user info does not contain an email.");
   }
 
   // Check if user already exists in DB by email
-  let user = await store.users.getUserByEmail(userinfo.data.email); //FIXME IT SHUOLD FIND BY AUTH PROVIDER ID
+  let user = await store.users.getUserByEmail(userProfile.email); //FIXME IT SHUOLD FIND BY AUTH PROVIDER ID
 
   if (!user) {
     const userId = uuidv4();
     const playerId = uuidv4();
-    // Create new user with info from Google
     const { user: createdUser } = await store.users.createUserAndPlayer({
       userId: userId,
       playerId: playerId,
-      email: userinfo.data.email,
-      name: userinfo.data.name || "No name",
+      email: userProfile.email,
+      name: userProfile.name || "No name",
       password: null,
-      authProvider: "google",
-      authProviderId: userinfo.data.id || null,
+      authProvider: "facebook",
+      authProviderId: userProfile.id,
     });
 
     user = createdUser;

@@ -3,33 +3,12 @@ import {
   Links,
   Meta,
   Outlet,
-  redirect,
   Scripts,
   ScrollRestoration,
 } from "react-router";
 
 import type { Route } from "./+types/root";
 import "./app.css";
-import { commitSession, getSession } from "~/.server/session";
-
-export async function loader({ request }: Route.LoaderArgs) {
-  const url = new URL(request.url);
-  const session = await getSession(request.headers.get("Cookie"));
-
-  if (!session.has("userId")) {
-    // Allow access to the login page even if not authenticated
-    if (url.pathname === "/login" || url.pathname === "/register") {
-      return null;
-    }
-
-    // Optionally: set flash or a newly created session
-    const headers = new Headers({
-      "Set-Cookie": await commitSession(session), // ensure session cookie is stored
-    });
-
-    return redirect("/login", { headers });
-  }
-}
 
 export const links: Route.LinksFunction = () => [
   { rel: "preconnect", href: "https://fonts.googleapis.com" },

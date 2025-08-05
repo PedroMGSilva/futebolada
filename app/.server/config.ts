@@ -7,13 +7,25 @@ function getEnv(name: string, required = true): string {
 }
 
 export const config = {
-  recaptchaV3SiteKey: getEnv("RECAPTCHA_V3_SITE_KEY"),
-  recaptchaV3SecretKey: getEnv("RECAPTCHA_V3_SECRET_KEY"),
+  recaptchaV3: {
+    siteKey: getEnv("RECAPTCHA_V3_SITE_KEY"),
+    secretKey: getEnv("RECAPTCHA_V3_SECRET_KEY"),
+  },
   db: {
     host: getEnv("DB_HOST"),
     port: parseInt(getEnv("DB_PORT", false) || "5432"),
     name: getEnv("DB_NAME"),
     user: getEnv("DB_USER"),
     password: getEnv("DB_PASSWORD"),
+  },
+  googleOAuth: {
+    clientId: getEnv("GOOGLE_CLIENT_ID"),
+    clientSecret: getEnv("GOOGLE_CLIENT_SECRET"),
+    redirectUri: getEnv("GOOGLE_REDIRECT_URI"),
+  },
+  facebookOAuth: {
+    clientId: getEnv("FACEBOOK_CLIENT_ID"),
+    clientSecret: getEnv("FACEBOOK_CLIENT_SECRET"),
+    redirectUri: getEnv("FACEBOOK_REDIRECT_URI"),
   },
 };
