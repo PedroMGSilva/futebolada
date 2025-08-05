@@ -3,11 +3,10 @@ import type { Player } from "~/.server/db/operations/players";
 
 type AuthProvider = "google" | "local" | "facebook";
 
-type User = {
+export type User = {
   id: string;
   email: string;
   name: string;
-  password: string;
   role: "user" | "admin";
 };
 
@@ -18,7 +17,6 @@ export async function getUserByEmail(email: string): Promise<User | null> {
           u.id,
           u.email,
           u.name,
-          u.password,
           u.role
       FROM users u
       WHERE u.email = $1
@@ -36,7 +34,6 @@ export async function getUserById(id: string): Promise<User | null> {
           u.id,
           u.email,
           u.name,
-          u.password,
           u.role
       FROM users u
       WHERE u.id = $1
@@ -57,7 +54,6 @@ export async function getUserByAuthProviderId(
           u.id,
           u.email,
           u.name,
-          u.password,
           u.role
       FROM users u
       WHERE u.auth_provider_id = $1 AND u.auth_provider = $2
@@ -73,7 +69,6 @@ interface CreateUserAndPlayerInput {
   playerId: string;
   email: string;
   name: string;
-  password: string | null;
   authProvider: AuthProvider;
   authProviderId: string | null;
 }
@@ -104,15 +99,14 @@ export async function createUserAndPlayer(
 
     const user = await client.query(
       `
-      INSERT INTO users (id, email, name, password, role, auth_provider, auth_provider_id, created_at, created_by, updated_at, updated_by)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), $8, NOW(), $9)
+      INSERT INTO users (id, email, name, role, auth_provider, auth_provider_id, created_at, created_by, updated_at, updated_by)
+      VALUES ($1, $2, $3, $4, $5, $6, NOW(), $7, NOW(), $8)
       RETURNING id, email, name
     `,
       [
         input.userId,
         input.email,
         input.name,
-        input.password,
         "user",
         input.authProvider,
         input.authProviderId,

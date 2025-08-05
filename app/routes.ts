@@ -8,6 +8,7 @@ import {
 export default [
   layout("routes/layout.tsx", [
     index("routes/index.tsx"),
+    route("games/past", "routes/past-games.tsx"),
     route("games/create", "routes/create-game.tsx"),
     route("games/:gameId", "routes/game-details.tsx"),
     route("games/:gameId/team-assignment", "routes/team-assignment.tsx"),

@@ -1,9 +1,10 @@
 import pool from "~/.server/db/client";
-import type { User } from "~/.server/domain/auth";
+import type { User } from "~/.server/db/operations/users";
 import type { Team } from "~/.server/db/operations/players-enrolled";
 
 type Guest = { id: string; name: string; createdBy: string };
 type Player = { id: string; user?: User; guest?: Guest };
+type WinningTeam = "black" | "white" | "draw";
 type PlayerEnrolled = {
   id: string;
   position: number;
@@ -21,6 +22,7 @@ export type Game = {
   location: string;
   maxPlayers: number;
   price: number;
+  winningTeam?: WinningTeam | null;
   playersEnrolled: PlayerEnrolled[];
 };
 
@@ -40,6 +42,7 @@ function parseGameRows(rows: any[]): Game[] {
         location: row.location,
         maxPlayers: row.max_players,
         price: row.price,
+        winningTeam: row.winning_team,
         playersEnrolled: [],
       };
       gamesMap.set(row.game_id, game);
@@ -55,6 +58,7 @@ function parseGameRows(rows: any[]): Game[] {
           id: row.user_id,
           email: row.email,
           name: row.user_name,
+          role: row.user_role,
         };
       } else if (row.guest_id) {
         player.guest = {
@@ -101,6 +105,7 @@ export async function getUpcomingGames(): Promise<GetUpcomingGamesResponse> {
       u.id AS user_id,
       u.email,
       u.name as user_name,
+      u.role as user_role,
       gu.id as guest_id,
       gu.name as guest_name,
       gu.created_by as guest_created_by
@@ -109,12 +114,72 @@ export async function getUpcomingGames(): Promise<GetUpcomingGamesResponse> {
     LEFT JOIN players p ON p.id = pe.player_id
     LEFT JOIN users u ON u.id = p.user_id
     LEFT JOIN guests gu ON gu.id = p.guest_id
-    WHERE g.date >= CURRENT_DATE
+    WHERE g.date > CURRENT_DATE OR (g.date = CURRENT_DATE AND g.end_time >= CURRENT_TIME)
     ORDER BY g.date, g.start_time, pe.position
   `);
 
   const games = parseGameRows(res.rows);
   return { games };
+}
+
+interface GetPastGamesInput {
+  limit: number;
+  offset: number;
+}
+
+interface GetPastGamesResponse {
+  games: Game[];
+  total: number;
+}
+
+export async function getPastGames({
+  limit,
+  offset,
+}: GetPastGamesInput): Promise<GetPastGamesResponse> {
+  // Using a transaction to ensure both queries are consistent
+  const client = await pool.connect();
+  try {
+    // First, get the total count of past games
+    const totalRes = await client.query<{ total: string }>(`
+      SELECT COUNT(id) as total
+      FROM games
+      WHERE date < CURRENT_DATE OR (date = CURRENT_DATE AND end_time < CURRENT_TIME)
+    `);
+    const total = parseInt(totalRes.rows[0].total, 10);
+
+    // Then, fetch the paginated list of games with all their details
+    const gamesRes = await client.query(
+      `
+      SELECT
+        g.id as game_id, g.date, g.start_time, g.end_time, g.latitude, g.longitude,
+        g.location, g.max_players, g.price, g.winning_team,
+        pe.id AS players_enrolled_id, pe.created_by AS players_enrolled_created_by,
+        pe.position, pe.team,
+        p.id AS player_id,
+        u.id AS user_id, u.email, u.name as user_name, u.role as user_role,
+        gu.id as guest_id, gu.name as guest_name, gu.created_by as guest_created_by
+      FROM games g
+      LEFT JOIN players_enrolled pe ON pe.game_id = g.id
+      LEFT JOIN players p ON p.id = pe.player_id
+      LEFT JOIN users u ON u.id = p.user_id
+      LEFT JOIN guests gu ON gu.id = p.guest_id
+      WHERE g.id IN (
+        SELECT id FROM games
+        WHERE date < CURRENT_DATE OR (date = CURRENT_DATE AND end_time < CURRENT_TIME)
+        ORDER BY date DESC, start_time DESC
+        LIMIT $1 OFFSET $2
+      )
+      ORDER BY g.date DESC, g.start_time DESC, pe.position
+    `,
+      [limit, offset],
+    );
+
+    const games = parseGameRows(gamesRes.rows);
+
+    return { games, total };
+  } finally {
+    client.release();
+  }
 }
 
 export async function getGameById(gameId: string): Promise<Game | null> {
@@ -130,6 +195,7 @@ export async function getGameById(gameId: string): Promise<Game | null> {
       g.location,
       g.max_players,
       g.price,
+      g.winning_team,
       pe.id AS players_enrolled_id,
       pe.created_by AS players_enrolled_created_by,
       pe.position,
@@ -138,6 +204,7 @@ export async function getGameById(gameId: string): Promise<Game | null> {
       u.id AS user_id,
       u.email,
       u.name as user_name,
+      u.role as user_role,
       gu.id as guest_id,
       gu.name as guest_name,
       gu.created_by as guest_created_by
@@ -175,7 +242,7 @@ export async function createGame(input: CreateGameInput): Promise<Game> {
     `
     INSERT INTO games (id, date, start_time, end_time, latitude, longitude, location, max_players, price, created_at, created_by, updated_at, updated_by)
     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW(), $10, NOW(), $11)
-    RETURNING id, date, start_time as "startTime", end_time as "endTime", latitude, longitude, location, max_players as "maxPlayers", price
+    RETURNING id, date, start_time as "startTime", end_time as "endTime", latitude, longitude, location, max_players as "maxPlayers", price, winning_team as "winningTeam"
   `,
     [
       input.id,
@@ -260,16 +327,35 @@ export async function enrollInGame(input: EnrollInGameInput): Promise<void> {
   }
 }
 
-interface unenrollFromGameInput {
+interface UnenrollFromGameInput {
   gameId: string;
   playerId: string;
 }
 
 export async function unenrollFromGame(
-  input: unenrollFromGameInput,
+  input: UnenrollFromGameInput,
 ): Promise<void> {
   await pool.query(
     `DELETE FROM players_enrolled WHERE game_id = $1 AND player_id = $2`,
     [input.gameId, input.playerId],
+  );
+}
+
+interface SetWinningTeamInput {
+  gameId: string;
+  winningTeam: WinningTeam;
+  actorId: string;
+}
+
+export async function setWinningTeam(
+  input: SetWinningTeamInput,
+): Promise<void> {
+  await pool.query(
+    `
+    UPDATE games
+    SET winning_team = $1, updated_at = NOW(), updated_by = $2
+    WHERE id = $3
+  `,
+    [input.winningTeam, input.actorId, input.gameId],
   );
 }

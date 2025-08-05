@@ -135,6 +135,27 @@ export async function action({ request, params }: Route.ActionArgs) {
       position,
       actorId: userId,
     });
+  } else if (actionType === "declareWinner") {
+    const user = await store.users.getUserById(userId);
+    if (user?.role !== "admin") {
+      throw new Response("Forbidden", { status: 403 });
+    }
+
+    const winningTeam = formData.get("winningTeam");
+
+    if (
+      winningTeam !== "white" &&
+      winningTeam !== "black" &&
+      winningTeam !== "draw"
+    ) {
+      throw new Response("Invalid winning team value", { status: 400 });
+    }
+
+    await store.games.setWinningTeam({
+      gameId: gameId,
+      winningTeam: winningTeam,
+      actorId: userId,
+    });
   }
 
   return redirect(`/games/${gameId}`);
@@ -199,6 +220,46 @@ export default function GameDetails({ loaderData }: Route.ComponentProps) {
               {(game.price / 100).toFixed(2)}
             </span>
           </p>
+
+          {/* Winner Display */}
+          {game.winningTeam && (
+            <div className="mt-8 p-4 bg-green-100 dark:bg-green-900 rounded-lg text-center">
+              <p className="text-lg font-semibold text-green-800 dark:text-green-200">
+                Winner: <span className="capitalize">{game.winningTeam}</span>
+              </p>
+            </div>
+          )}
+
+          {/* Declare Winner Form */}
+          {userRole === "admin" && !game.winningTeam && (
+            <div className="mt-8 border-t pt-6">
+              <h3 className="text-lg font-semibold mb-4">Declare Winner</h3>
+              <Form method="post">
+                <input type="hidden" name="_action" value="declareWinner" />
+                <div className="flex items-center gap-4">
+                  <select
+                    name="winningTeam"
+                    defaultValue=""
+                    required
+                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                  >
+                    <option value="" disabled>
+                      Select winner
+                    </option>
+                    <option value="white">White</option>
+                    <option value="black">Black</option>
+                    <option value="draw">Draw</option>
+                  </select>
+                  <button
+                    type="submit"
+                    className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
+                  >
+                    Save
+                  </button>
+                </div>
+              </Form>
+            </div>
+          )}
 
           <div className="mt-8">
             <iframe
