@@ -18,4 +18,5 @@ export default [
   route("auth/facebook", "routes/auth-facebook.tsx"),
   route("auth/facebook/callback", "routes/auth-facebook-callback.tsx"),
   route("privacy-policy", "routes/privacy-policy.tsx"),
+  route("facebook-data-deletion", "routes/facebook-data-deletion.tsx"),
 ] satisfies RouteConfig;
