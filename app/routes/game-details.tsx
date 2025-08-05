@@ -363,7 +363,7 @@ export default function GameDetails({ loaderData }: Route.ComponentProps) {
                         className={`flex gap-2 items-center transition-opacity duration-200 ${
                           guestInputSlot === position
                             ? "opacity-100 visible"
-                            : "opacity-0 invisible h-0 overflow-hidden"
+                            : "hidden opacity-0 invisible h-0 overflow-hidden"
                         }`}
                       >
                         <input
