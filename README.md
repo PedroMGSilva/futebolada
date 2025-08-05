@@ -85,3 +85,15 @@ This template comes with [Tailwind CSS](https://tailwindcss.com/) already config
 ---
 
 Built with ❤️ using React Router.
+
+## Important:
+
+Entrar no server: `ssh -v root@188.245.148.246`
+
+lá dentro está a pasta futebolada com o repositorio git. é fazer git pull e actualizar o .env se for necessário.
+
+A seguir depende do que querem fazer. mudaram migrações? `docker compose up -d migrate --build`
+
+Querem actualizar a app? `docker compose up -d app --build`
+
+Actualizar alguma coisa na BD? `docker compose exec db psql -U futebolada -d futebolada`

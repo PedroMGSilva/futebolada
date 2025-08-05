@@ -1,11 +1,13 @@
 import pool from "~/.server/db/client";
 import type { User } from "~/.server/domain/auth";
+import type { Team } from "~/.server/db/operations/players-enrolled";
 
 type Guest = { id: string; name: string; createdBy: string };
 type Player = { id: string; user?: User; guest?: Guest };
 type PlayerEnrolled = {
   id: string;
   position: number;
+  team: Team;
   player: Player;
   createdBy: string;
 };
@@ -65,6 +67,7 @@ function parseGameRows(rows: any[]): Game[] {
       game.playersEnrolled.push({
         id: row.players_enrolled_id,
         position: row.position,
+        team: row.team,
         createdBy: row.players_enrolled_created_by,
         player,
       });
@@ -93,6 +96,7 @@ export async function getUpcomingGames(): Promise<GetUpcomingGamesResponse> {
       pe.id AS players_enrolled_id,
       pe.created_by AS players_enrolled_created_by,
       pe.position,
+      pe.team,
       p.id AS player_id,
       u.id AS user_id,
       u.email,
@@ -129,6 +133,7 @@ export async function getGameById(gameId: string): Promise<Game | null> {
       pe.id AS players_enrolled_id,
       pe.created_by AS players_enrolled_created_by,
       pe.position,
+      pe.team,
       p.id AS player_id,
       u.id AS user_id,
       u.email,

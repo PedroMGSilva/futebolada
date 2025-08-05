@@ -15,6 +15,11 @@ export async function loader({ request, params }: Route.LoaderArgs) {
   const gameId = params.gameId;
 
   const userId = session.get("userId")!;
+
+  if (!userId) return redirect("/login");
+
+  const user = (await store.users.getUserById(session.get("userId")!))!;
+
   const game = await store.games.getGameById(gameId);
   const guests = await store.guests.getAllGuests();
 
@@ -30,7 +35,7 @@ export async function loader({ request, params }: Route.LoaderArgs) {
     (guest) => !enrolledGuestIds.includes(guest.id),
   );
 
-  return { game, guests: availableGuests, userId };
+  return { game, guests: availableGuests, userId, userRole: user.role };
 }
 
 export async function action({ request, params }: Route.ActionArgs) {
@@ -136,7 +141,7 @@ export async function action({ request, params }: Route.ActionArgs) {
 }
 
 export default function GameDetails({ loaderData }: Route.ComponentProps) {
-  const { game, userId, guests } = loaderData;
+  const { game, userId, guests, userRole } = loaderData;
   const [guestInputSlot, setGuestInputSlot] = useState<number | null>(null);
   const [guestName, setGuestName] = useState("");
 
@@ -146,9 +151,27 @@ export default function GameDetails({ loaderData }: Route.ComponentProps) {
 
   return (
     <main className="max-w-6xl mx-auto p-6">
-      <h1 className="text-3xl font-bold mb-6 text-center md:text-left">
-        Game Details
-      </h1>
+      <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-8">
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white text-center md:text-left mb-4 md:mb-0">
+          Game Details
+        </h1>
+        <div className="flex items-center gap-4">
+          {userRole === "admin" && (
+            <Link
+              to={`/games/${game.id}/team-assignment`}
+              className="inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg shadow-sm hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 transition-colors"
+            >
+              Team Assignment
+            </Link>
+          )}
+          <Link
+            to={`/`}
+            className="inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg shadow-sm hover:bg-gray-50 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700 transition-colors"
+          >
+            &larr; Back to Games
+          </Link>
+        </div>
+      </div>
 
       <div className="flex flex-col md:flex-row gap-8">
         {/* Game Info */}
@@ -209,11 +232,25 @@ export default function GameDetails({ loaderData }: Route.ComponentProps) {
                   key={i}
                   className="flex justify-between items-center border-b pb-2"
                 >
-                  <span>
+                  <span className="flex items-center">
                     {playerEnrolled ? (
-                      playerEnrolled.player.user?.name ||
-                      playerEnrolled.player.guest?.name ||
-                      "Unknown"
+                      <>
+                        <span className="font-medium text-gray-800 dark:text-gray-200">
+                          {playerEnrolled.player.user?.name ||
+                            playerEnrolled.player.guest?.name ||
+                            "Unknown"}
+                        </span>
+                        {playerEnrolled.team === "white" && (
+                          <span className="ml-2 px-2 py-0.5 text-xs font-semibold text-gray-800 bg-gray-200 rounded-full dark:bg-gray-300 dark:text-gray-900">
+                            White
+                          </span>
+                        )}
+                        {playerEnrolled.team === "black" && (
+                          <span className="ml-2 px-2 py-0.5 text-xs font-semibold text-white bg-gray-900 rounded-full dark:bg-black dark:text-gray-200">
+                            Black
+                          </span>
+                        )}
+                      </>
                     ) : (
                       <span className="text-gray-400 italic">Empty Slot</span>
                     )}
@@ -329,12 +366,6 @@ export default function GameDetails({ loaderData }: Route.ComponentProps) {
             })}
           </ul>
         </section>
-      </div>
-
-      <div className="mt-6 text-center md:text-left">
-        <Link to="/" className="text-blue-600 hover:underline">
-          &larr; Back to games
-        </Link>
       </div>
     </main>
   );

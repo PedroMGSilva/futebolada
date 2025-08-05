@@ -103,7 +103,17 @@ export default function CreateGame() {
 
   return (
     <main className="p-6 max-w-md mx-auto">
-      <h1 className="text-2xl font-bold mb-6">Create New Game</h1>
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-6 pb-4 border-b border-gray-200 dark:border-gray-700">
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white text-center sm:text-left mb-4 sm:mb-0">
+          Create New Game
+        </h1>
+        <Link
+          to="/"
+          className="inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-gray-600 bg-gray-100 border border-transparent rounded-lg hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600 transition-colors"
+        >
+          &larr; Back to Games
+        </Link>
+      </div>
       <Form method="post" className="space-y-4">
         {actionData?.error && (
           <p className="text-red-600 font-semibold">{actionData.error}</p>
@@ -215,12 +225,6 @@ export default function CreateGame() {
           Create Game
         </button>
       </Form>
-
-      <div className="mt-6 text-center md:text-left">
-        <Link to="/" className="text-blue-600 hover:underline">
-          &larr; Back to games
-        </Link>
-      </div>
     </main>
   );
 }

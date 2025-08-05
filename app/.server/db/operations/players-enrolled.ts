@@ -1,5 +1,7 @@
 import pool from "~/.server/db/client";
 
+export type Team = "black" | "white" | null;
+
 export async function getPlayerEnrolledById(id: string) {
   const res = await pool.query(
     `SELECT * FROM players_enrolled WHERE id = $1 LIMIT 1`,
@@ -15,4 +17,17 @@ export async function getPlayerEnrolledById(id: string) {
     position: res.rows[0].position,
     createdBy: res.rows[0].created_by,
   };
+}
+
+interface AssignTeamToPlayerEnrolledInput {
+  playerEnrolledId: string;
+  team: Team;
+}
+export async function assignTeamToPlayerEnrolled(
+  input: AssignTeamToPlayerEnrolledInput,
+) {
+  await pool.query(`UPDATE players_enrolled SET team = $1 WHERE id = $2`, [
+    input.team,
+    input.playerEnrolledId,
+  ]);
 }

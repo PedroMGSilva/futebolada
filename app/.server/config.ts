@@ -30,5 +30,5 @@ export const config = {
   },
   session: {
     secret: getEnv("SESSION_SECRET"),
-  }
+  },
 };
