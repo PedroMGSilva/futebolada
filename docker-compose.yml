@@ -25,6 +25,7 @@ services:
       - "3000:3000"
     networks:
       - web
+      - internal
 
   migrate:
     build:
@@ -37,6 +38,8 @@ services:
     environment:
       DATABASE_URL: postgres://${DB_USER}:${DB_PASSWORD}@db:${DB_PORT}/${DB_NAME}
     command: npm run migrate
+    networks:
+      - internal
 
   db:
     image: postgres:17.5
@@ -53,6 +56,8 @@ services:
       test: ["CMD-SHELL", "pg_isready -d ${DB_NAME} -U ${DB_USER}"]
       interval: 5s
       retries: 5
+    networks:
+      - internal
 
   caddy:
     image: caddy:alpine
@@ -75,3 +80,4 @@ volumes:
 
 networks:
   web:
+  internal:
