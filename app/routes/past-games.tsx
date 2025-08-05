@@ -114,16 +114,14 @@ export default function PastGames({ loaderData }: Route.ComponentProps) {
                   </span>
                 </p>
                 <p className="text-sm text-gray-600">{game.location}</p>
-                <p>
-                  {game.winningTeam && (
-                    <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-                      <p className="text-sm font-semibold text-center">
-                        Winner:{" "}
-                        <span className="capitalize">{game.winningTeam}</span>
-                      </p>
-                    </div>
-                  )}
-                </p>
+                {game.winningTeam && (
+                  <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                    <p className="text-sm font-semibold text-center">
+                      Winner:{" "}
+                      <span className="capitalize">{game.winningTeam}</span>
+                    </p>
+                  </div>
+                )}
               </Link>
             </li>
           ))}

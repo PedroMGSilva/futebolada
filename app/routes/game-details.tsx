@@ -50,6 +50,27 @@ export async function action({ request, params }: Route.ActionArgs) {
   const formData = await request.formData();
   const actionType = formData.get("_action");
 
+  const game = await store.games.getGameById(gameId);
+  if (!game) throw new Response("Game not found", { status: 404 });
+
+  // Check if the game is over
+  const now = new Date();
+  const [hours, minutes] = game.endTime.split(":").map(Number);
+  const gameEndDateTime = new Date(game.date);
+  gameEndDateTime.setHours(hours, minutes);
+  const isGameOver = now > gameEndDateTime;
+
+  if (
+    (actionType === "enroll" ||
+      actionType === "unenroll" ||
+      actionType === "enrollGuest") &&
+    isGameOver
+  ) {
+    throw new Response("Cannot modify enrollment for a past game.", {
+      status: 403,
+    });
+  }
+
   if (actionType === "unenroll") {
     const playerEnrolledId = formData.get("playerEnrolledId");
     if (!playerEnrolledId || typeof playerEnrolledId !== "string") {
@@ -73,9 +94,6 @@ export async function action({ request, params }: Route.ActionArgs) {
       playerId: playerEnrolled.playerId,
     });
   } else if (actionType === "enroll") {
-    const game = await store.games.getGameById(gameId);
-    if (!game) throw new Response("Game not found", { status: 404 });
-
     const position = Number(formData.get("position"));
     if (!position || position < 1 || position > game.maxPlayers) {
       throw new Response("Invalid position", { status: 400 });
@@ -93,9 +111,6 @@ export async function action({ request, params }: Route.ActionArgs) {
       actorId: userId,
     });
   } else if (actionType === "enrollGuest") {
-    const game = await store.games.getGameById(gameId);
-    if (!game) throw new Response("Game not found", { status: 404 });
-
     const guestName = formData.get("guestName");
     const position = Number(formData.get("position"));
 
@@ -170,6 +185,11 @@ export default function GameDetails({ loaderData }: Route.ComponentProps) {
     (p) => p.player.user?.id === userId,
   );
 
+  const [hours, minutes] = game.endTime.split(":").map(Number);
+  const gameEndDateTime = new Date(game.date);
+  gameEndDateTime.setHours(hours, minutes);
+  const isGameOver = new Date() > gameEndDateTime;
+
   return (
     <main className="max-w-6xl mx-auto p-6">
       <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-8">
@@ -177,7 +197,7 @@ export default function GameDetails({ loaderData }: Route.ComponentProps) {
           Game Details
         </h1>
         <div className="flex items-center gap-4">
-          {userRole === "admin" && (
+          {userRole === "admin" && !isGameOver && (
             <Link
               to={`/games/${game.id}/team-assignment`}
               className="inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg shadow-sm hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 transition-colors"
@@ -317,7 +337,7 @@ export default function GameDetails({ loaderData }: Route.ComponentProps) {
                     )}
                   </span>
 
-                  {canRemove && (
+                  {!isGameOver && canRemove && (
                     <Form method="post">
                       <input type="hidden" name="_action" value="unenroll" />
                       <input
@@ -335,7 +355,7 @@ export default function GameDetails({ loaderData }: Route.ComponentProps) {
                   )}
 
                   {/* Available slot actions */}
-                  {!playerEnrolled && (
+                  {!isGameOver && !playerEnrolled && (
                     <>
                       {/* Guest form (always rendered, hidden when not active) */}
                       <Form
