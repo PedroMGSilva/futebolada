@@ -8,9 +8,12 @@ export default function PrivacyPolicy() {
         collect, use, and protect your personal information.
       </p>
 
-      <h2 className="text-xl font-semibold mt-6 mb-2">1. Information We Collect</h2>
+      <h2 className="text-xl font-semibold mt-6 mb-2">
+        1. Information We Collect
+      </h2>
       <p className="mb-4">
-        When you sign in using third-party providers (e.g., Facebook, Google), we may collect:
+        When you sign in using third-party providers (e.g., Facebook, Google),
+        we may collect:
       </p>
       <ul className="list-disc list-inside mb-4">
         <li>Your name</li>
@@ -18,10 +21,10 @@ export default function PrivacyPolicy() {
         <li>Your profile picture</li>
       </ul>
 
-      <h2 className="text-xl font-semibold mt-6 mb-2">2. How We Use Your Information</h2>
-      <p className="mb-4">
-        We use your data only to:
-      </p>
+      <h2 className="text-xl font-semibold mt-6 mb-2">
+        2. How We Use Your Information
+      </h2>
+      <p className="mb-4">We use your data only to:</p>
       <ul className="list-disc list-inside mb-4">
         <li>Create and manage your user account</li>
         <li>Personalize your experience</li>
@@ -30,7 +33,8 @@ export default function PrivacyPolicy() {
 
       <h2 className="text-xl font-semibold mt-6 mb-2">3. Data Sharing</h2>
       <p className="mb-4">
-        We do <strong>not</strong> sell or share your personal data with third parties.
+        We do <strong>not</strong> sell or share your personal data with third
+        parties.
       </p>
 
       <h2 className="text-xl font-semibold mt-6 mb-2">4. Data Security</h2>
@@ -42,23 +46,33 @@ export default function PrivacyPolicy() {
       <h2 className="text-xl font-semibold mt-6 mb-2">5. Data Deletion</h2>
       <p className="mb-4">
         You may request deletion of your data by contacting us at{" "}
-        <a href="mailto:contact@futebolada.org" className="text-blue-600 underline">
+        <a
+          href="mailto:contact@futebolada.org"
+          className="text-blue-600 underline"
+        >
           contact@futebolada.org
-        </a>.
+        </a>
+        .
       </p>
 
-      <h2 className="text-xl font-semibold mt-6 mb-2">6. Changes to This Policy</h2>
+      <h2 className="text-xl font-semibold mt-6 mb-2">
+        6. Changes to This Policy
+      </h2>
       <p className="mb-4">
-        We may update this policy from time to time. Continued use of the service
-        constitutes acceptance of the updated policy.
+        We may update this policy from time to time. Continued use of the
+        service constitutes acceptance of the updated policy.
       </p>
 
       <h2 className="text-xl font-semibold mt-6 mb-2">7. Contact</h2>
       <p>
         If you have any questions, email us at{" "}
-        <a href="mailto:contact@futebolada.org" className="text-blue-600 underline">
+        <a
+          href="mailto:contact@futebolada.org"
+          className="text-blue-600 underline"
+        >
           contact@futebolada.org
-        </a>.
+        </a>
+        .
       </p>
     </div>
   );
