@@ -10,6 +10,9 @@ import { store } from "app/.server/db/operations";
 import { getLocationName } from "~/.server/domain/game";
 import { v4 as uuidv4 } from "uuid";
 import { getSession } from "~/.server/session";
+// @ts-expect-error // gmaps-expand-shorturl does not have types
+import { convertMapUrlToPoint } from "gmaps-expand-shorturl";
+import { retry } from "~/.server/utils";
 
 type ActionData = {
   error?: string;
@@ -34,8 +37,7 @@ export const action: ActionFunction = async ({ request }) => {
   const date = formData.get("date");
   const startTime = formData.get("startTime");
   const endTime = formData.get("endTime");
-  const latitude = formData.get("latitude");
-  const longitude = formData.get("longitude");
+  const googleMapsLink = formData.get("googleMapsLink");
   const maxPlayers = formData.get("maxPlayers");
   const price = formData.get("price");
 
@@ -47,10 +49,8 @@ export const action: ActionFunction = async ({ request }) => {
     typeof startTime !== "string" ||
     !endTime ||
     typeof endTime !== "string" ||
-    !latitude ||
-    typeof latitude !== "string" ||
-    !longitude ||
-    typeof longitude !== "string" ||
+    !googleMapsLink ||
+    typeof googleMapsLink !== "string" ||
     !maxPlayers ||
     typeof maxPlayers !== "string" ||
     !price ||
@@ -59,13 +59,8 @@ export const action: ActionFunction = async ({ request }) => {
     return { error: "All fields are required" };
   }
 
-  const latNum = Number(latitude);
-  const lonNum = Number(longitude);
   const maxPlayersNum = Number(maxPlayers);
   const priceNum = Number(price);
-  if (isNaN(latNum) || isNaN(lonNum)) {
-    return { error: "Latitude and longitude must be valid numbers" };
-  }
 
   if (isNaN(maxPlayersNum) || maxPlayersNum < 1) {
     return { error: "Max players must be a positive number" };
@@ -78,7 +73,27 @@ export const action: ActionFunction = async ({ request }) => {
   // Convert price in dollars to cents (integer)
   const priceCents = Math.round(priceNum * 100);
 
-  const locationName = await getLocationName(latNum, lonNum);
+  let latitude = 0;
+  let longitude = 0;
+
+  try {
+    const result = await retry(
+      () =>
+        convertMapUrlToPoint(googleMapsLink) as Promise<{
+          latitude: number;
+          longitude: number;
+        }>,
+      3,
+    );
+    if (result && result.latitude && result.longitude) {
+      latitude = result.latitude;
+      longitude = result.longitude;
+    }
+  } catch (e) {
+    console.error("All retries failed:", e);
+  }
+
+  const locationName = await getLocationName(latitude, longitude);
   const id = uuidv4();
 
   await store.games.createGame({
@@ -86,8 +101,8 @@ export const action: ActionFunction = async ({ request }) => {
     date,
     startTime,
     endTime,
-    latitude: latNum,
-    longitude: lonNum,
+    latitude: latitude,
+    longitude: longitude,
     location: locationName || "Unknown Location",
     maxPlayers: maxPlayersNum,
     price: priceCents,
@@ -159,28 +174,13 @@ export default function CreateGame() {
         </div>
 
         <div>
-          <label htmlFor="latitude" className="block mb-1 font-semibold">
-            Latitude
+          <label htmlFor="googleMapsLink" className="block mb-1 font-semibold">
+            Google Maps Link
           </label>
           <input
-            id="latitude"
-            type="number"
-            name="latitude"
-            step="any"
-            required
-            className="w-full border rounded px-3 py-2"
-          />
-        </div>
-
-        <div>
-          <label htmlFor="longitude" className="block mb-1 font-semibold">
-            Longitude
-          </label>
-          <input
-            id="longitude"
-            type="number"
-            name="longitude"
-            step="any"
+            id="googleMapsLink"
+            type="text"
+            name="googleMapsLink"
             required
             className="w-full border rounded px-3 py-2"
           />
