@@ -88,7 +88,7 @@ Built with ❤️ using React Router.
 
 ## Important:
 
-Entrar no server: `ssh -v root@188.245.148.246`
+Entrar no server: `ssh -v root@XXX.XXX.XXX.XXX`
 
 lá dentro está a pasta futebolada com o repositorio git. é fazer git pull e actualizar o .env se for necessário.
 
