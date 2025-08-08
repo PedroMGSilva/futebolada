@@ -7,10 +7,6 @@ function getEnv(name: string, required = true): string {
 }
 
 export const config = {
-  recaptchaV3: {
-    siteKey: getEnv("RECAPTCHA_V3_SITE_KEY"),
-    secretKey: getEnv("RECAPTCHA_V3_SECRET_KEY"),
-  },
   db: {
     host: getEnv("DB_HOST"),
     port: parseInt(getEnv("DB_PORT", false) || "5432"),
