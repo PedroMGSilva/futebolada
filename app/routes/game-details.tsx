@@ -328,6 +328,10 @@ export default function GameDetails({ loaderData }: Route.ComponentProps) {
                             playerEnrolled.player.guest?.name ||
                             "Unknown"}
                         </span>
+                        {playerEnrolled.player.user?.id ===
+                          "6b180f86-1c4f-437d-afa3-064654c18bb8" && (
+                          <span className="ml-1">🌈</span>
+                        )}
                         {playerEnrolled.team === "white" && (
                           <span className="ml-2 px-2 py-0.5 text-xs font-semibold text-gray-800 bg-gray-200 rounded-full dark:bg-gray-300 dark:text-gray-900">
                             White
