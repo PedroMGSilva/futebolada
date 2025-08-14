@@ -316,7 +316,14 @@ export default function GameDetails({ loaderData }: Route.ComponentProps) {
                   <span className="flex items-center">
                     {playerEnrolled ? (
                       <>
-                        <span className="font-medium text-gray-800 dark:text-gray-200">
+                        <span
+                          className={
+                            playerEnrolled.id ===
+                            "6b180f86-1c4f-437d-afa3-064654c18bb8"
+                              ? "font-medium text-transparent bg-clip-text bg-gradient-to-r from-red-500 via-orange-400 via-yellow-300 via-green-500 via-blue-500 to-violet-600 dark:from-red-400 dark:via-orange-300 dark:via-yellow-200 dark:via-green-400 dark:via-blue-400 dark:to-violet-400"
+                              : "font-medium text-gray-800 dark:text-gray-200"
+                          }
+                        >
                           {playerEnrolled.player.user?.display_name ||
                             playerEnrolled.player.guest?.name ||
                             "Unknown"}
