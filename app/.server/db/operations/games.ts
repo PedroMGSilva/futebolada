@@ -87,7 +87,12 @@ interface GetUpcomingGamesResponse {
 }
 
 export async function getUpcomingGames(): Promise<GetUpcomingGamesResponse> {
-  const res = await pool.query(`
+  const now = new Date();
+  const currentDate = now.toISOString().split("T")[0];
+  const currentTime = now.toTimeString().split(" ")[0];
+
+  const res = await pool.query(
+    `
     SELECT
       g.id as game_id,
       g.date,
@@ -116,9 +121,11 @@ export async function getUpcomingGames(): Promise<GetUpcomingGamesResponse> {
     LEFT JOIN players p ON p.id = pe.player_id
     LEFT JOIN users u ON u.id = p.user_id
     LEFT JOIN guests gu ON gu.id = p.guest_id
-    WHERE g.date > CURRENT_DATE OR (g.date = CURRENT_DATE AND g.end_time >= CURRENT_TIME)
+    WHERE g.date > $1 OR (g.date = $1 AND g.end_time >= $2)
     ORDER BY g.date, g.start_time, pe.position
-  `);
+  `,
+    [currentDate, currentTime],
+  );
 
   const games = parseGameRows(res.rows);
   return { games };
@@ -138,15 +145,24 @@ export async function getPastGames({
   limit,
   offset,
 }: GetPastGamesInput): Promise<GetPastGamesResponse> {
+  const now = new Date();
+
+  // Local date and time
+  const currentDate = now.toLocaleDateString("sv-SE"); // YYYY-MM-DD
+  const currentTime = now.toLocaleTimeString("en-GB", { hour12: false }); // HH:MM:SS
+
   // Using a transaction to ensure both queries are consistent
   const client = await pool.connect();
   try {
     // First, get the total count of past games
-    const totalRes = await client.query<{ total: string }>(`
+    const totalRes = await client.query<{ total: string }>(
+      `
       SELECT COUNT(id) as total
       FROM games
-      WHERE date < CURRENT_DATE OR (date = CURRENT_DATE AND end_time < CURRENT_TIME)
-    `);
+      WHERE date < $1 OR (date = $1 AND end_time < $2)
+    `,
+      [currentDate, currentTime],
+    );
     const total = parseInt(totalRes.rows[0].total, 10);
 
     // Then, fetch the paginated list of games with all their details
@@ -167,13 +183,13 @@ export async function getPastGames({
       LEFT JOIN guests gu ON gu.id = p.guest_id
       WHERE g.id IN (
         SELECT id FROM games
-        WHERE date < CURRENT_DATE OR (date = CURRENT_DATE AND end_time < CURRENT_TIME)
+        WHERE date < $1 OR (date = $1 AND end_time < $2)
         ORDER BY date DESC, start_time DESC
-        LIMIT $1 OFFSET $2
+        LIMIT $3 OFFSET $4
       )
       ORDER BY g.date DESC, g.start_time DESC, pe.position
     `,
-      [limit, offset],
+      [currentDate, currentTime, limit, offset],
     );
 
     const games = parseGameRows(gamesRes.rows);
