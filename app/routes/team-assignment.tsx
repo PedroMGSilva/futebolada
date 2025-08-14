@@ -114,7 +114,7 @@ export default function GameDetails({ loaderData }: Route.ComponentProps) {
                 className="flex items-center justify-between bg-gray-100 dark:bg-gray-700/50 p-3 rounded-lg"
               >
                 <span className="font-medium text-gray-800 dark:text-gray-200">
-                  {playerEnrolled.player.user?.name ||
+                  {playerEnrolled.player.user?.display_name ||
                     playerEnrolled.player.guest?.name}
                 </span>
                 <Form method="post" className="flex items-center gap-2">
