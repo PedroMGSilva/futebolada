@@ -7,6 +7,7 @@ export type User = {
   id: string;
   email: string;
   name: string;
+  display_name: string;
   role: "user" | "admin";
 };
 
@@ -17,6 +18,7 @@ export async function getUserByEmail(email: string): Promise<User | null> {
           u.id,
           u.email,
           u.name,
+          u.display_name,
           u.role
       FROM users u
       WHERE u.email = $1
@@ -34,6 +36,7 @@ export async function getUserById(id: string): Promise<User | null> {
           u.id,
           u.email,
           u.name,
+          u.display_name,
           u.role
       FROM users u
       WHERE u.id = $1
@@ -54,6 +57,7 @@ export async function getUserByAuthProviderId(
           u.id,
           u.email,
           u.name,
+          u.display_name,
           u.role
       FROM users u
       WHERE u.auth_provider_id = $1 AND u.auth_provider = $2
@@ -69,6 +73,7 @@ interface CreateUserAndPlayerInput {
   playerId: string;
   email: string;
   name: string;
+  displayName: string;
   authProvider: AuthProvider;
   authProviderId: string | null;
 }
@@ -99,14 +104,15 @@ export async function createUserAndPlayer(
 
     const user = await client.query(
       `
-      INSERT INTO users (id, email, name, role, auth_provider, auth_provider_id, created_at, created_by, updated_at, updated_by)
-      VALUES ($1, $2, $3, $4, $5, $6, NOW(), $7, NOW(), $8)
-      RETURNING id, email, name
+      INSERT INTO users (id, email, name, display_name, role, auth_provider, auth_provider_id, created_at, created_by, updated_at, updated_by)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), $8, NOW(), $9)
+      RETURNING id, email, name, display_name
     `,
       [
         input.userId,
         input.email,
         input.name,
+        input.displayName,
         "user",
         input.authProvider,
         input.authProviderId,
@@ -136,4 +142,26 @@ export async function createUserAndPlayer(
   } finally {
     client.release();
   }
+}
+
+interface UpdateUserDisplayNameInput {
+  id: string;
+  displayName: string;
+  actorId: string;
+}
+
+export async function updateUserDisplayName(
+  input: UpdateUserDisplayNameInput,
+): Promise<User | null> {
+  const result = await pool.query<User>(
+    `
+      UPDATE users
+      SET display_name = $1, updated_at = NOW(), updated_by = $2
+      WHERE id = $3
+      RETURNING id, email, name, display_name, role
+    `,
+    [input.displayName, input.actorId, input.id],
+  );
+
+  return result.rows[0] ?? null;
 }

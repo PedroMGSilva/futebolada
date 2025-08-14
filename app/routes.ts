@@ -12,6 +12,7 @@ export default [
     route("games/create", "routes/create-game.tsx"),
     route("games/:gameId", "routes/game-details.tsx"),
     route("games/:gameId/team-assignment", "routes/team-assignment.tsx"),
+    route("profile", "routes/profile.tsx"),
     route("logout", "routes/logout.tsx"),
   ]),
   route("login", "routes/login.tsx"),

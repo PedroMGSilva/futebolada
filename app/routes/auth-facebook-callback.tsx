@@ -47,7 +47,7 @@ export async function loader({ request }: Route.LoaderArgs) {
       playerId: playerId,
       email: userProfile.email,
       name: userProfile.name || "No name",
-      password: null,
+      displayName: userProfile.name || "No name",
       authProvider: "facebook",
       authProviderId: userProfile.id,
     });

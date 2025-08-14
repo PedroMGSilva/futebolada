@@ -317,7 +317,7 @@ export default function GameDetails({ loaderData }: Route.ComponentProps) {
                     {playerEnrolled ? (
                       <>
                         <span className="font-medium text-gray-800 dark:text-gray-200">
-                          {playerEnrolled.player.user?.name ||
+                          {playerEnrolled.player.user?.display_name ||
                             playerEnrolled.player.guest?.name ||
                             "Unknown"}
                         </span>
@@ -365,6 +365,7 @@ export default function GameDetails({ loaderData }: Route.ComponentProps) {
                             ? "opacity-100 visible"
                             : "hidden opacity-0 invisible h-0 overflow-hidden"
                         }`}
+                        onSubmit={() => setGuestName("")}
                       >
                         <input
                           type="hidden"

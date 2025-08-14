@@ -58,6 +58,7 @@ function parseGameRows(rows: any[]): Game[] {
           id: row.user_id,
           email: row.email,
           name: row.user_name,
+          display_name: row.user_display_name,
           role: row.user_role,
         };
       } else if (row.guest_id) {
@@ -105,6 +106,7 @@ export async function getUpcomingGames(): Promise<GetUpcomingGamesResponse> {
       u.id AS user_id,
       u.email,
       u.name as user_name,
+      u.display_name as user_display_name,
       u.role as user_role,
       gu.id as guest_id,
       gu.name as guest_name,
@@ -156,7 +158,7 @@ export async function getPastGames({
         pe.id AS players_enrolled_id, pe.created_by AS players_enrolled_created_by,
         pe.position, pe.team,
         p.id AS player_id,
-        u.id AS user_id, u.email, u.name as user_name, u.role as user_role,
+        u.id AS user_id, u.email, u.name as user_name, u.display_name as user_display_name, u.role as user_role,
         gu.id as guest_id, gu.name as guest_name, gu.created_by as guest_created_by
       FROM games g
       LEFT JOIN players_enrolled pe ON pe.game_id = g.id
@@ -204,6 +206,7 @@ export async function getGameById(gameId: string): Promise<Game | null> {
       u.id AS user_id,
       u.email,
       u.name as user_name,
+      u.display_name as user_display_name,
       u.role as user_role,
       gu.id as guest_id,
       gu.name as guest_name,

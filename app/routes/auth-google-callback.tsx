@@ -50,7 +50,7 @@ export async function loader({ request }: Route.LoaderArgs) {
       playerId: playerId,
       email: userinfo.data.email,
       name: userinfo.data.name || "No name",
-      password: null,
+      displayName: userinfo.data.name || "No name",
       authProvider: "google",
       authProviderId: userinfo.data.id,
     });
