@@ -93,7 +93,7 @@ export default function PastGames({ loaderData }: Route.ComponentProps) {
                 <p className="flex items-center gap-2 mb-2">
                   <CalendarIcon className="w-6 h-6 text-blue-600" />
                   <span className="text-lg font-semibold">
-                    {new Date(game.date).toLocaleDateString(undefined, {
+                    {new Date(game.date).toLocaleDateString("pt-PT", {
                       weekday: "long",
                       year: "numeric",
                       month: "long",
