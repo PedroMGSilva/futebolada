@@ -7,6 +7,7 @@ import {
   ClockIcon,
   UserGroupIcon,
 } from "@heroicons/react/16/solid";
+import { formatDate } from "~/utils";
 
 export async function loader({ request }: Route.LoaderArgs) {
   const session = await getSession(request.headers.get("Cookie"));
@@ -32,6 +33,8 @@ export async function loader({ request }: Route.LoaderArgs) {
     limit: GAMES_PER_PAGE,
     offset,
   });
+
+  console.log("games", games);
 
   return {
     games,
@@ -93,12 +96,7 @@ export default function PastGames({ loaderData }: Route.ComponentProps) {
                 <p className="flex items-center gap-2 mb-2">
                   <CalendarIcon className="w-6 h-6 text-blue-600" />
                   <span className="text-lg font-semibold">
-                    {new Date(game.date).toLocaleDateString("pt-PT", {
-                      weekday: "long",
-                      year: "numeric",
-                      month: "long",
-                      day: "numeric",
-                    })}
+                    {formatDate(game.date)}
                   </span>
                 </p>
                 <p className="flex items-center gap-3 mb-2">

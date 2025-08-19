@@ -9,6 +9,7 @@ import {
 } from "@heroicons/react/16/solid";
 import { v4 as uuidv4 } from "uuid";
 import { useState } from "react";
+import { formatDate } from "~/utils";
 
 export async function loader({ request, params }: Route.LoaderArgs) {
   const session = await getSession(request.headers.get("Cookie"));
@@ -220,12 +221,7 @@ export default function GameDetails({ loaderData }: Route.ComponentProps) {
           <p className="flex items-center gap-3 mb-6">
             <CalendarIcon className="w-6 h-6 text-blue-600" />
             <span className="text-xl font-semibold">
-              {new Date(game.date).toLocaleDateString("pt-PT", {
-                weekday: "long",
-                year: "numeric",
-                month: "long",
-                day: "numeric",
-              })}
+              {formatDate(game.date)}
             </span>
           </p>
           <p className="flex items-center gap-3 mb-6">

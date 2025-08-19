@@ -148,8 +148,8 @@ export async function getPastGames({
   const now = new Date();
 
   // Local date and time
-  const currentDate = now.toLocaleDateString("pt-PT"); // YYYY-MM-DD
-  const currentTime = now.toLocaleTimeString("pt-PT", { hour12: false }); // HH:MM:SS
+  const currentDate = now.toISOString().slice(0, 10);
+  const currentTime = now.toTimeString().slice(0, 8);
 
   // Using a transaction to ensure both queries are consistent
   const client = await pool.connect();

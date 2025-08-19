@@ -1,5 +1,7 @@
-import { Pool } from "pg";
+import pg, { Pool } from "pg";
 import { config } from "~/.server/config";
+
+pg.types.setTypeParser(1082, (val: string) => val);
 
 const pool = new Pool({
   host: config.db.host,
