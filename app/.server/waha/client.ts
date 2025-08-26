@@ -2,9 +2,9 @@ import { config } from "~/.server/config";
 import { randomDelay, wait } from "~/.server/utils";
 
 interface WahaClientOptions {
-  baseUrl: string;         // e.g. "http://localhost:3000/api"
-  apiKey: string;          // your X-Api-Key
-  session?: string;        // defaults to "default"
+  baseUrl: string; // e.g. "http://localhost:3000/api"
+  apiKey: string; // your X-Api-Key
+  session?: string; // defaults to "default"
 }
 
 class WahaClient {
@@ -20,14 +20,14 @@ class WahaClient {
 
   private async request<T>(
     endpoint: string,
-    body: Record<string, unknown>
+    body: Record<string, unknown>,
   ): Promise<T> {
     const res = await fetch(`${this.baseUrl}${endpoint}`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         "X-Api-Key": this.apiKey,
-        "accept": "application/json",
+        accept: "application/json",
       },
       body: JSON.stringify({ ...body, session: this.session }),
     });
@@ -78,7 +78,7 @@ const client = new WahaClient({
 
 export async function sendSafeMessage(
   chatId: string,
-  text: string
+  text: string,
 ): Promise<void> {
   // Step 1: Mark as seen
   await client.sendSeen(chatId);

@@ -31,5 +31,5 @@ export const config = {
     baseUrl: getEnv("WAHA_BASE_URL"),
     apiKey: getEnv("WAHA_API_KEY"),
     chatId: getEnv("WAHA_CHAT_ID"),
-  }
+  },
 };

@@ -131,7 +131,6 @@ export async function action({ request, params }: Route.ActionArgs) {
 *Hora*: ${game.startTime.slice(0, 5)} - ${game.endTime.slice(0, 5)}
 *Inscritos*: ${game.playersEnrolled.length + 1} / ${game.maxPlayers}`,
     );
-
   } else if (actionType === "enrollGuest") {
     const guestName = formData.get("guestName");
     const position = Number(formData.get("position"));
@@ -181,7 +180,6 @@ export async function action({ request, params }: Route.ActionArgs) {
 *Hora*: ${game.startTime.slice(0, 5)} - ${game.endTime.slice(0, 5)}
 *Inscritos*: ${game.playersEnrolled.length + 1} / ${game.maxPlayers}`,
     );
-
   } else if (actionType === "declareWinner") {
     const user = await store.users.getUserById(userId);
     if (user?.role !== "admin") {
