@@ -27,4 +27,9 @@ export const config = {
   session: {
     secret: getEnv("SESSION_SECRET"),
   },
+  waha: {
+    baseUrl: getEnv("WAHA_BASE_URL"),
+    apiKey: getEnv("WAHA_API_KEY"),
+    chatId: getEnv("WAHA_CHAT_ID"),
+  }
 };

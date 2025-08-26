@@ -6,6 +6,8 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      waha:
+        condition: service_started
     restart: always
     environment:
       DB_HOST: db
@@ -20,6 +22,9 @@ services:
       FACEBOOK_CLIENT_SECRET: ${FACEBOOK_CLIENT_SECRET}
       FACEBOOK_REDIRECT_URI: ${FACEBOOK_REDIRECT_URI}
       SESSION_SECRET: ${SESSION_SECRET}
+      WAHA_BASE_URL: ${WAHA_BASE_URL}
+      WAHA_API_KEY: ${WAHA_API_KEY}
+      WAHA_CHAT_ID: ${WAHA_CHAT_ID}
     ports:
       - "3000:3000"
     networks:
@@ -72,10 +77,25 @@ services:
     depends_on:
       - app
 
+  waha:
+    image: devlikeapro/waha:arm-2025.8.2
+    restart: unless-stopped
+    environment:
+      WAHA_API_KEY: ${WAHA_API_KEY}
+      WAHA_DASHBOARD_ENABLED: ${WAHA_DASHBOARD_ENABLED}
+      WHATSAPP_SWAGGER_ENABLED: ${WHATSAPP_SWAGGER_ENABLED}
+    ports:
+      - "3001:3000"
+    volumes:
+      - waha_config:/app/config
+    networks:
+      - internal
+
 volumes:
   db-data:
   caddy_data:
   caddy_config:
+  waha_config:
 
 networks:
   web:

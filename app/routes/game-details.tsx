@@ -10,6 +10,8 @@ import {
 import { v4 as uuidv4 } from "uuid";
 import { useState } from "react";
 import { formatDate } from "~/utils";
+import { config } from "~/.server/config";
+import sender from "~/.server/waha/rateLimitedClient";
 
 export async function loader({ request, params }: Route.LoaderArgs) {
   const session = await getSession(request.headers.get("Cookie"));
@@ -94,6 +96,15 @@ export async function action({ request, params }: Route.ActionArgs) {
       gameId,
       playerId: playerEnrolled.playerId,
     });
+
+    sender.send(
+      config.waha.chatId,
+      `😢 *Desistência de última hora* 😢
+
+*Jogo*: ${formatDate(game.date)}
+*Hora*: ${game.startTime.slice(0, 5)} - ${game.endTime.slice(0, 5)}
+*Inscritos*: ${game.playersEnrolled.length - 1} / ${game.maxPlayers}`,
+    );
   } else if (actionType === "enroll") {
     const position = Number(formData.get("position"));
     if (!position || position < 1 || position > game.maxPlayers) {
@@ -111,6 +122,16 @@ export async function action({ request, params }: Route.ActionArgs) {
       position,
       actorId: userId,
     });
+
+    sender.send(
+      config.waha.chatId,
+      `🚨 *Novo jogador inscrito!* 🚨
+
+*Jogo*: ${formatDate(game.date)}
+*Hora*: ${game.startTime.slice(0, 5)} - ${game.endTime.slice(0, 5)}
+*Inscritos*: ${game.playersEnrolled.length + 1} / ${game.maxPlayers}`,
+    );
+
   } else if (actionType === "enrollGuest") {
     const guestName = formData.get("guestName");
     const position = Number(formData.get("position"));
@@ -151,6 +172,16 @@ export async function action({ request, params }: Route.ActionArgs) {
       position,
       actorId: userId,
     });
+
+    sender.send(
+      config.waha.chatId,
+      `🚨 *Novo jogador inscrito!* 🚨
+
+*Jogo*: ${formatDate(game.date)}
+*Hora*: ${game.startTime.slice(0, 5)} - ${game.endTime.slice(0, 5)}
+*Inscritos*: ${game.playersEnrolled.length + 1} / ${game.maxPlayers}`,
+    );
+
   } else if (actionType === "declareWinner") {
     const user = await store.users.getUserById(userId);
     if (user?.role !== "admin") {
