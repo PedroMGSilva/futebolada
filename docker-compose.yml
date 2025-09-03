@@ -78,7 +78,7 @@ services:
       - app
 
   waha:
-    image: devlikeapro/waha:arm-2025.8.2
+    image: devlikeapro/waha:arm-2025.9.1
     restart: unless-stopped
     environment:
       WAHA_API_KEY: ${WAHA_API_KEY}
