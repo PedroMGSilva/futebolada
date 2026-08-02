@@ -16,22 +16,35 @@ export async function getLocationName(
 ): Promise<string | null> {
   const url = `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`;
 
-  const response = await fetch(url, {
-    headers: {
-      "User-Agent": "Futebolada.org/1.0",
-    },
-  });
-  const data = await response.json();
+  try {
+    const response = await fetch(url, {
+      headers: {
+        "User-Agent": "Futebolada.org/1.0",
+      },
+      signal: AbortSignal.timeout(5000),
+    });
 
-  if (data && data.address) {
-    const parts = [
-      data.address.amenity,
-      data.address.road,
-      data.address.neighbourhood,
-      data.address.town,
-    ];
+    if (!response.ok) {
+      console.error(
+        `Nominatim returned ${response.status} for ${latitude},${longitude}`,
+      );
+      return null;
+    }
 
-    return parts.filter(Boolean).join(", ");
+    const data = await response.json();
+
+    if (data && data.address) {
+      const parts = [
+        data.address.amenity,
+        data.address.road,
+        data.address.neighbourhood,
+        data.address.town,
+      ];
+
+      return parts.filter(Boolean).join(", ") || null;
+    }
+  } catch (err) {
+    console.error("Failed to reverse geocode:", err);
   }
 
   return null;

@@ -7,37 +7,21 @@ import {
   type ActionFunction,
   useNavigation,
 } from "react-router";
-import { store } from "app/.server/db/operations";
-import { getSession } from "~/.server/session";
+import { store } from "~/.server/db/operations";
+import { requireUser } from "~/.server/auth/require";
 
 type ActionData = {
   error?: string;
 };
 
 export async function loader({ request }: Route.LoaderArgs) {
-  const session = await getSession(request.headers.get("Cookie"));
+  const user = await requireUser(request);
 
-  if (!session.has("userId")) {
-    return redirect("/login");
-  }
-
-  const user = await store.users.getUserById(session.get("userId")!);
-
-  if (!user) {
-    throw new Response("User not found", { status: 404 });
-  }
-
-  const displayName = user.display_name;
-
-  return { displayName };
+  return { displayName: user.display_name };
 }
 
 export const action: ActionFunction = async ({ request }) => {
-  const session = await getSession(request.headers.get("Cookie"));
-
-  if (!session.has("userId")) {
-    return redirect("/login");
-  }
+  const user = await requireUser(request);
 
   const formData = await request.formData();
   const name = formData.get("name");
@@ -48,9 +32,9 @@ export const action: ActionFunction = async ({ request }) => {
   }
 
   await store.users.updateUserDisplayName({
-    id: session.get("userId"),
+    id: user.id,
     displayName: name,
-    actorId: session.get("userId"),
+    actorId: user.id,
   });
 
   // After successful save, redirect to home

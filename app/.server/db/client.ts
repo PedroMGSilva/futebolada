@@ -11,4 +11,8 @@ const pool = new Pool({
   database: config.db.name,
 });
 
+pool.on("error", (err) => {
+  console.error("Idle database client errored:", err);
+});
+
 export default pool;

@@ -6,32 +6,22 @@ import {
   redirect,
   useActionData,
 } from "react-router";
-import { store } from "app/.server/db/operations";
+import { store } from "~/.server/db/operations";
 import { getLocationName } from "~/.server/domain/game";
 import { v4 as uuidv4 } from "uuid";
-import { getSession } from "~/.server/session";
-// @ts-expect-error // gmaps-expand-shorturl does not have types
-import { convertMapUrlToPoint } from "gmaps-expand-shorturl";
-import { retry } from "~/.server/utils";
+import { requireAdmin } from "~/.server/auth/require";
+import { coordinatesFromGoogleMapsUrl } from "~/.server/domain/maps";
 
 type ActionData = {
   error?: string;
 };
 
 export async function loader({ request }: Route.LoaderArgs) {
-  const session = await getSession(request.headers.get("Cookie"));
-
-  const user = (await store.users.getUserById(session.get("userId")!))!;
-
-  if (user.role !== "admin") {
-    throw new Response("You are not authorized to create games", {
-      status: 403,
-    });
-  }
+  await requireAdmin(request);
 }
 
 export const action: ActionFunction = async ({ request }) => {
-  const session = await getSession(request.headers.get("Cookie"));
+  const admin = await requireAdmin(request);
 
   const formData = await request.formData();
   const date = formData.get("date");
@@ -62,38 +52,35 @@ export const action: ActionFunction = async ({ request }) => {
   const maxPlayersNum = Number(maxPlayers);
   const priceNum = Number(price);
 
-  if (isNaN(maxPlayersNum) || maxPlayersNum < 1) {
-    return { error: "Max players must be a positive number" };
+  if (!Number.isInteger(maxPlayersNum) || maxPlayersNum < 1) {
+    return { error: "Max players must be a positive whole number" };
+  }
+
+  if (maxPlayersNum > 100) {
+    return { error: "Max players cannot be more than 100" };
   }
 
   if (isNaN(priceNum) || priceNum < 0) {
     return { error: "Price must be a non-negative number" };
   }
 
+  if (priceNum > 10000) {
+    return { error: "Price cannot be more than 10000" };
+  }
+
   // Convert price in dollars to cents (integer)
   const priceCents = Math.round(priceNum * 100);
 
-  let latitude = 0;
-  let longitude = 0;
+  const coordinates = await coordinatesFromGoogleMapsUrl(googleMapsLink);
 
-  try {
-    const result = await retry(
-      () =>
-        convertMapUrlToPoint(googleMapsLink) as Promise<{
-          latitude: number;
-          longitude: number;
-        }>,
-      3,
-    );
-    if (result && result.latitude && result.longitude) {
-      latitude = result.latitude;
-      longitude = result.longitude;
-    }
-  } catch (e) {
-    console.error("All retries failed:", e);
+  if (!coordinates) {
+    console.error("Could not read coordinates from map link:", googleMapsLink);
   }
 
-  const locationName = await getLocationName(latitude, longitude);
+  const locationName = coordinates
+    ? await getLocationName(coordinates.latitude, coordinates.longitude)
+    : null;
+
   const id = uuidv4();
 
   await store.games.createGame({
@@ -101,17 +88,16 @@ export const action: ActionFunction = async ({ request }) => {
     date,
     startTime,
     endTime,
-    latitude: latitude,
-    longitude: longitude,
+    latitude: coordinates?.latitude ?? 0,
+    longitude: coordinates?.longitude ?? 0,
     location: locationName || "Unknown Location",
     maxPlayers: maxPlayersNum,
     price: priceCents,
-    createdBy: session.get("userId")!,
-    updatedBy: session.get("userId")!,
+    createdBy: admin.id,
+    updatedBy: admin.id,
   });
 
-  // After successful save, redirect to home or calendar page
-  return redirect("/");
+  return redirect(`/games/${id}`);
 };
 export default function CreateGame() {
   const actionData = useActionData<ActionData>();

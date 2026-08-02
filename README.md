@@ -51,10 +51,33 @@ them with empty values.
 | `GOOGLE_CLIENT_ID` `GOOGLE_CLIENT_SECRET` `GOOGLE_REDIRECT_URI`       | Google login                                                       |
 | `FACEBOOK_CLIENT_ID` `FACEBOOK_CLIENT_SECRET` `FACEBOOK_REDIRECT_URI` | Facebook login                                                     |
 | `SESSION_SECRET`                                                      | signs user session cookies                                         |
+| `ALLOWED_EMAILS`                                                      | comma-separated emails allowed to create an account (see below)    |
 | `WAHA_BASE_URL`                                                       | where the app reaches WAHA (see table above)                       |
 | `WAHA_API_KEY`                                                        | authenticates every WAHA request                                   |
 | `WAHA_CHAT_ID`                                                        | the WhatsApp group notifications go to, e.g. `3519...-163...@g.us` |
 | `WAHA_DASHBOARD_ENABLED` `WHATSAPP_SWAGGER_ENABLED`                   | WAHA's web UI and API docs, both `false` in production             |
+
+### Who is allowed to sign up
+
+Anyone with a Google or Facebook account can reach `/login`, so `ALLOWED_EMAILS`
+decides who is allowed to become a user:
+
+```
+ALLOWED_EMAILS=pedro@example.com,rui@example.com,bruno@example.com
+```
+
+Only **account creation** is checked. Everyone who already has a row in `users`
+keeps signing in regardless of this list, so editing it can never lock out the
+existing group — and removing someone from it does not remove their account.
+
+An empty or missing value means **nobody new can sign up**. That is deliberate:
+forgetting to set it fails closed and blocks a stranger, and the person who is
+turned away sees a message telling them to ask you. To add a friend, add their
+email and `docker compose up -d app`. Blocked attempts are logged:
+
+```bash
+docker logs futebolada-app-1 | grep "Blocked registration"
+```
 
 ## 3. Database migrations
 
