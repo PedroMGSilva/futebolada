@@ -1,9 +1,9 @@
 import pool from "~/.server/db/client";
-import type { User } from "~/.server/db/operations/users";
 import type { Team } from "~/.server/db/operations/players-enrolled";
 
-type Guest = { id: string; name: string; createdBy: string };
-type Player = { id: string; user?: User; guest?: Guest };
+type RosterUser = { id: string; display_name: string };
+type Guest = { id: string; name: string };
+type Player = { id: string; user?: RosterUser; guest?: Guest };
 type WinningTeam = "black" | "white" | "draw";
 type PlayerEnrolled = {
   id: string;
@@ -56,16 +56,12 @@ function parseGameRows(rows: any[]): Game[] {
       if (row.user_id) {
         player.user = {
           id: row.user_id,
-          email: row.email,
-          name: row.user_name,
           display_name: row.user_display_name,
-          role: row.user_role,
         };
       } else if (row.guest_id) {
         player.guest = {
           id: row.guest_id,
           name: row.guest_name,
-          createdBy: row.guest_created_by,
         };
       }
 
@@ -109,13 +105,9 @@ export async function getUpcomingGames(): Promise<GetUpcomingGamesResponse> {
       pe.team,
       p.id AS player_id,
       u.id AS user_id,
-      u.email,
-      u.name as user_name,
       u.display_name as user_display_name,
-      u.role as user_role,
       gu.id as guest_id,
-      gu.name as guest_name,
-      gu.created_by as guest_created_by
+      gu.name as guest_name
     FROM games g
     LEFT JOIN players_enrolled pe ON pe.game_id = g.id
     LEFT JOIN players p ON p.id = pe.player_id
@@ -174,8 +166,8 @@ export async function getPastGames({
         pe.id AS players_enrolled_id, pe.created_by AS players_enrolled_created_by,
         pe.position, pe.team,
         p.id AS player_id,
-        u.id AS user_id, u.email, u.name as user_name, u.display_name as user_display_name, u.role as user_role,
-        gu.id as guest_id, gu.name as guest_name, gu.created_by as guest_created_by
+        u.id AS user_id, u.display_name as user_display_name,
+        gu.id as guest_id, gu.name as guest_name
       FROM games g
       LEFT JOIN players_enrolled pe ON pe.game_id = g.id
       LEFT JOIN players p ON p.id = pe.player_id
@@ -220,13 +212,9 @@ export async function getGameById(gameId: string): Promise<Game | null> {
       pe.team,
       p.id AS player_id,
       u.id AS user_id,
-      u.email,
-      u.name as user_name,
       u.display_name as user_display_name,
-      u.role as user_role,
       gu.id as guest_id,
-      gu.name as guest_name,
-      gu.created_by as guest_created_by
+      gu.name as guest_name
     FROM games g
     LEFT JOIN players_enrolled pe ON pe.game_id = g.id
     LEFT JOIN players p ON p.id = pe.player_id
