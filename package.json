@@ -7,6 +7,7 @@
     "dev": "node ./server.js",
     "start": "cross-env NODE_ENV=production node ./server.js",
     "typecheck": "react-router typegen && tsc",
+    "lint": "eslint .",
     "migrate": "node-pg-migrate up -j js"
   },
   "dependencies": {
