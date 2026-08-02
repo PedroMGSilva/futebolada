@@ -6,6 +6,7 @@ import {
   CalendarIcon,
   ClockIcon,
   CurrencyEuroIcon,
+  MapPinIcon,
 } from "@heroicons/react/16/solid";
 import { v4 as uuidv4 } from "uuid";
 import { useState } from "react";
@@ -286,6 +287,9 @@ export default function GameDetails({ loaderData }: Route.ComponentProps) {
   gameEndDateTime.setHours(hours, minutes);
   const isGameOver = new Date() > gameEndDateTime;
 
+  const hasCoordinates = game.latitude !== 0 || game.longitude !== 0;
+  const directionsUrl = `https://www.google.com/maps/dir/?api=1&destination=${game.latitude},${game.longitude}`;
+
   return (
     <main className="max-w-6xl mx-auto p-6">
       <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-8">
@@ -331,6 +335,21 @@ export default function GameDetails({ loaderData }: Route.ComponentProps) {
               {(game.price / 100).toFixed(2)}
             </span>
           </p>
+          <p className="flex items-center gap-3 mb-6">
+            <MapPinIcon className="w-6 h-6 text-blue-600 shrink-0" />
+            {hasCoordinates ? (
+              <a
+                href={directionsUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xl font-semibold text-blue-600 hover:underline"
+              >
+                {game.location}
+              </a>
+            ) : (
+              <span className="text-xl font-semibold">{game.location}</span>
+            )}
+          </p>
 
           {/* Winner Display */}
           {game.winningTeam && (
@@ -373,14 +392,21 @@ export default function GameDetails({ loaderData }: Route.ComponentProps) {
           )}
 
           <div className="mt-8">
-            <iframe
-              title="Game Location Map"
-              className="w-full h-100 rounded-md border"
-              loading="lazy"
-              allowFullScreen
-              referrerPolicy="no-referrer-when-downgrade"
-              src={`https://www.google.com/maps?q=${game.latitude},${game.longitude}&z=15&output=embed`}
-            />
+            {hasCoordinates ? (
+              <iframe
+                title="Game Location Map"
+                className="w-full h-100 rounded-md border"
+                loading="lazy"
+                allowFullScreen
+                referrerPolicy="no-referrer-when-downgrade"
+                src={`https://www.google.com/maps?q=${game.latitude},${game.longitude}&z=15&output=embed`}
+              />
+            ) : (
+              <p className="rounded-md border border-dashed p-6 text-center text-gray-500 dark:text-gray-400">
+                No map for this game — the link it was created with could not be
+                read.
+              </p>
+            )}
           </div>
         </section>
 

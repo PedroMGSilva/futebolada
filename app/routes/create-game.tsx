@@ -97,8 +97,7 @@ export const action: ActionFunction = async ({ request }) => {
     updatedBy: admin.id,
   });
 
-  // After successful save, redirect to home or calendar page
-  return redirect("/");
+  return redirect(`/games/${id}`);
 };
 export default function CreateGame() {
   const actionData = useActionData<ActionData>();
