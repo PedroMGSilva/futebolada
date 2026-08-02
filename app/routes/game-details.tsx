@@ -12,6 +12,42 @@ import { useState } from "react";
 import { formatDate } from "~/utils";
 import { config } from "~/.server/config";
 import sender from "~/.server/waha/rateLimitedClient";
+import type { Game } from "~/.server/db/operations/games";
+
+function playerName(playerEnrolled: Game["playersEnrolled"][number]): string {
+  return (
+    playerEnrolled.player.user?.display_name ||
+    playerEnrolled.player.guest?.name ||
+    "Unknown"
+  );
+}
+
+async function notifyEnrollmentChange(
+  gameId: string,
+  title: string,
+  name: string,
+): Promise<void> {
+  const game = await store.games.getGameById(gameId);
+  if (!game) return;
+
+  const roster = game.playersEnrolled
+    .map(
+      (playerEnrolled, index) => `${index + 1}. ${playerName(playerEnrolled)}`,
+    )
+    .join("\n");
+
+  await sender.send(
+    config.waha.chatId,
+    `${title}
+
+*Jogador*: ${name}
+*Jogo*: ${formatDate(game.date)}
+*Hora*: ${game.startTime.slice(0, 5)} - ${game.endTime.slice(0, 5)}
+*Inscritos*: ${game.playersEnrolled.length} / ${game.maxPlayers}${
+      roster ? `\n\n${roster}` : ""
+    }`,
+  );
+}
 
 export async function loader({ request, params }: Route.LoaderArgs) {
   const session = await getSession(request.headers.get("Cookie"));
@@ -92,23 +128,22 @@ export async function action({ request, params }: Route.ActionArgs) {
       });
     }
 
+    const leaving = game.playersEnrolled.find(
+      (pe) => pe.id === playerEnrolledId,
+    );
+
     await store.games.unenrollFromGame({
       gameId,
       playerId: playerEnrolled.playerId,
     });
 
-    sender
-      .send(
-        config.waha.chatId,
-        `😢 *Desistência de última hora* 😢
-
-*Jogo*: ${formatDate(game.date)}
-*Hora*: ${game.startTime.slice(0, 5)} - ${game.endTime.slice(0, 5)}
-*Inscritos*: ${game.playersEnrolled.length - 1} / ${game.maxPlayers}`,
-      )
-      .catch((err) => {
-        console.error("Failed to send WhatsApp notification:", err);
-      });
+    notifyEnrollmentChange(
+      gameId,
+      "😢 *Desistência de última hora* 😢",
+      leaving ? playerName(leaving) : "Unknown",
+    ).catch((err) => {
+      console.error("Failed to send WhatsApp notification:", err);
+    });
   } else if (actionType === "enroll") {
     const position = Number(formData.get("position"));
     if (!position || position < 1 || position > game.maxPlayers) {
@@ -117,6 +152,8 @@ export async function action({ request, params }: Route.ActionArgs) {
 
     const player = await store.players.getByUserId(userId);
     if (!player) throw new Response("Player not found", { status: 400 });
+
+    const user = await store.users.getUserById(userId);
 
     const playerEnrolledId = uuidv4();
     await store.games.enrollInGame({
@@ -127,18 +164,13 @@ export async function action({ request, params }: Route.ActionArgs) {
       actorId: userId,
     });
 
-    sender
-      .send(
-        config.waha.chatId,
-        `🚨 *Novo jogador inscrito!* 🚨
-
-*Jogo*: ${formatDate(game.date)}
-*Hora*: ${game.startTime.slice(0, 5)} - ${game.endTime.slice(0, 5)}
-*Inscritos*: ${game.playersEnrolled.length + 1} / ${game.maxPlayers}`,
-      )
-      .catch((err) => {
-        console.error("Failed to send WhatsApp notification:", err);
-      });
+    notifyEnrollmentChange(
+      gameId,
+      "🚨 *Novo jogador inscrito!* 🚨",
+      user?.display_name || "Unknown",
+    ).catch((err) => {
+      console.error("Failed to send WhatsApp notification:", err);
+    });
   } else if (actionType === "enrollGuest") {
     const guestName = formData.get("guestName");
     const position = Number(formData.get("position"));
@@ -180,18 +212,13 @@ export async function action({ request, params }: Route.ActionArgs) {
       actorId: userId,
     });
 
-    sender
-      .send(
-        config.waha.chatId,
-        `🚨 *Novo jogador inscrito!* 🚨
-
-*Jogo*: ${formatDate(game.date)}
-*Hora*: ${game.startTime.slice(0, 5)} - ${game.endTime.slice(0, 5)}
-*Inscritos*: ${game.playersEnrolled.length + 1} / ${game.maxPlayers}`,
-      )
-      .catch((err) => {
-        console.error("Failed to send WhatsApp notification:", err);
-      });
+    notifyEnrollmentChange(
+      gameId,
+      "🚨 *Novo jogador inscrito!* 🚨",
+      guestName,
+    ).catch((err) => {
+      console.error("Failed to send WhatsApp notification:", err);
+    });
   } else if (actionType === "declareWinner") {
     const user = await store.users.getUserById(userId);
     if (user?.role !== "admin") {
