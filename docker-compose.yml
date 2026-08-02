@@ -55,7 +55,12 @@ services:
     volumes:
       - db-data:/var/lib/postgresql/data
     ports:
-      - "5432:5432"
+      # Loopback only. In production app and migrate reach the database over
+      # the internal network as DB_HOST=db; publishing on 0.0.0.0 exposed
+      # Postgres to the internet behind nothing but DB_PASSWORD. Kept published
+      # for local development, where npm run dev connects to localhost:5432.
+      # To reach it from outside, tunnel: ssh -L 5432:localhost:5432 root@<host>
+      - "127.0.0.1:5432:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -d ${DB_NAME} -U ${DB_USER}"]
       interval: 5s
