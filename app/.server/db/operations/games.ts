@@ -353,10 +353,9 @@ interface UnenrollFromGameInput {
 export async function unenrollFromGame(
   input: UnenrollFromGameInput,
 ): Promise<boolean> {
-  const res = await pool.query(
-    `DELETE FROM players_enrolled WHERE id = $1`,
-    [input.playerEnrolledId],
-  );
+  const res = await pool.query(`DELETE FROM players_enrolled WHERE id = $1`, [
+    input.playerEnrolledId,
+  ]);
 
   return (res.rowCount ?? 0) > 0;
 }
