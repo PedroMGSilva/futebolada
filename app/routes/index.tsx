@@ -1,6 +1,6 @@
 import type { Route } from "./+types/index";
 import { Link } from "react-router";
-import { store } from "app/.server/db/operations";
+import { store } from "~/.server/db/operations";
 import {
   CalendarIcon,
   ClockIcon,

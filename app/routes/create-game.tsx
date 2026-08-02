@@ -6,7 +6,7 @@ import {
   redirect,
   useActionData,
 } from "react-router";
-import { store } from "app/.server/db/operations";
+import { store } from "~/.server/db/operations";
 import { getLocationName } from "~/.server/domain/game";
 import { v4 as uuidv4 } from "uuid";
 import { requireAdmin } from "~/.server/auth/require";

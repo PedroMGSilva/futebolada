@@ -7,7 +7,7 @@ import {
   type ActionFunction,
   useNavigation,
 } from "react-router";
-import { store } from "app/.server/db/operations";
+import { store } from "~/.server/db/operations";
 import { requireUser } from "~/.server/auth/require";
 
 type ActionData = {

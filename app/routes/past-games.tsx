@@ -1,6 +1,6 @@
 import type { Route } from "./+types/past-games";
 import { Link, useSearchParams } from "react-router";
-import { store } from "app/.server/db/operations";
+import { store } from "~/.server/db/operations";
 import { requireUser } from "~/.server/auth/require";
 import {
   CalendarIcon,

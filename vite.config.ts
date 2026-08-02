@@ -1,12 +1,14 @@
 import { reactRouter } from "@react-router/dev/vite";
 import tailwindcss from "@tailwindcss/vite";
 import { defineConfig } from "vite";
-import tsconfigPaths from "vite-tsconfig-paths";
 
 export default defineConfig({
   server: {
     allowedHosts: ["futebolada.local", "futebolada.org"],
     host: true,
   },
-  plugins: [tailwindcss(), reactRouter(), tsconfigPaths()],
+  resolve: {
+    tsconfigPaths: true,
+  },
+  plugins: [tailwindcss(), reactRouter()],
 });

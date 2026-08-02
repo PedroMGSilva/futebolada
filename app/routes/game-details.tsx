@@ -1,5 +1,5 @@
 import type { Route } from "./+types/game-details";
-import { store } from "app/.server/db/operations";
+import { store } from "~/.server/db/operations";
 import { Form, Link, redirect } from "react-router";
 import { requireUser } from "~/.server/auth/require";
 import {

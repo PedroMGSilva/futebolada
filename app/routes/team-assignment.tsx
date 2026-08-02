@@ -1,5 +1,5 @@
 import type { Route } from "./+types/team-assignment";
-import { store } from "app/.server/db/operations";
+import { store } from "~/.server/db/operations";
 import { Form, Link, redirect } from "react-router";
 import { requireAdmin } from "~/.server/auth/require";
 
