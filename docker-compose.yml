@@ -86,7 +86,11 @@ services:
       WHATSAPP_SWAGGER_ENABLED: ${WHATSAPP_SWAGGER_ENABLED}
       WHATSAPP_DEFAULT_ENGINE: NOWEB
     ports:
-      - "3001:3000"
+      # Loopback only. In production the app reaches waha over the internal
+      # network by service name; publishing on 0.0.0.0 put the WhatsApp API on
+      # the internet behind nothing but the API key. Kept published for local
+      # development, where npm run dev talks to localhost:3001 from the host.
+      - "127.0.0.1:3001:3000"
     volumes:
       - waha_config:/app/config
       - waha_sessions:/app/.sessions
