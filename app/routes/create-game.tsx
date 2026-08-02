@@ -10,9 +10,7 @@ import { store } from "app/.server/db/operations";
 import { getLocationName } from "~/.server/domain/game";
 import { v4 as uuidv4 } from "uuid";
 import { requireAdmin } from "~/.server/auth/require";
-// @ts-expect-error // gmaps-expand-shorturl does not have types
-import { convertMapUrlToPoint } from "gmaps-expand-shorturl";
-import { retry } from "~/.server/utils";
+import { coordinatesFromGoogleMapsUrl } from "~/.server/domain/maps";
 
 type ActionData = {
   error?: string;
@@ -73,27 +71,16 @@ export const action: ActionFunction = async ({ request }) => {
   // Convert price in dollars to cents (integer)
   const priceCents = Math.round(priceNum * 100);
 
-  let latitude = 0;
-  let longitude = 0;
+  const coordinates = await coordinatesFromGoogleMapsUrl(googleMapsLink);
 
-  try {
-    const result = await retry(
-      () =>
-        convertMapUrlToPoint(googleMapsLink) as Promise<{
-          latitude: number;
-          longitude: number;
-        }>,
-      3,
-    );
-    if (result && result.latitude && result.longitude) {
-      latitude = result.latitude;
-      longitude = result.longitude;
-    }
-  } catch (e) {
-    console.error("All retries failed:", e);
+  if (!coordinates) {
+    console.error("Could not read coordinates from map link:", googleMapsLink);
   }
 
-  const locationName = await getLocationName(latitude, longitude);
+  const locationName = coordinates
+    ? await getLocationName(coordinates.latitude, coordinates.longitude)
+    : null;
+
   const id = uuidv4();
 
   await store.games.createGame({
@@ -101,8 +88,8 @@ export const action: ActionFunction = async ({ request }) => {
     date,
     startTime,
     endTime,
-    latitude: latitude,
-    longitude: longitude,
+    latitude: coordinates?.latitude ?? 0,
+    longitude: coordinates?.longitude ?? 0,
     location: locationName || "Unknown Location",
     maxPlayers: maxPlayersNum,
     price: priceCents,
