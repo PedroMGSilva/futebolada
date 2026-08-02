@@ -347,17 +347,18 @@ export async function enrollInGame(input: EnrollInGameInput): Promise<void> {
 }
 
 interface UnenrollFromGameInput {
-  gameId: string;
-  playerId: string;
+  playerEnrolledId: string;
 }
 
 export async function unenrollFromGame(
   input: UnenrollFromGameInput,
-): Promise<void> {
-  await pool.query(
-    `DELETE FROM players_enrolled WHERE game_id = $1 AND player_id = $2`,
-    [input.gameId, input.playerId],
+): Promise<boolean> {
+  const res = await pool.query(
+    `DELETE FROM players_enrolled WHERE id = $1`,
+    [input.playerEnrolledId],
   );
+
+  return (res.rowCount ?? 0) > 0;
 }
 
 interface SetWinningTeamInput {

@@ -1,7 +1,7 @@
 import type { Route } from "./+types/past-games";
-import { Link, redirect, useSearchParams } from "react-router";
+import { Link, useSearchParams } from "react-router";
 import { store } from "app/.server/db/operations";
-import { getSession } from "~/.server/session";
+import { requireUser } from "~/.server/auth/require";
 import {
   CalendarIcon,
   ClockIcon,
@@ -10,19 +10,7 @@ import {
 import { formatDate } from "~/utils";
 
 export async function loader({ request }: Route.LoaderArgs) {
-  const session = await getSession(request.headers.get("Cookie"));
-
-  if (!session.has("userId")) {
-    return redirect("/login");
-  }
-
-  const user = await store.users.getUserById(session.get("userId")!);
-
-  if (!user) {
-    throw new Response("User not found", { status: 404 });
-  }
-
-  const role = user.role;
+  const user = await requireUser(request);
 
   const GAMES_PER_PAGE = 10;
   const url = new URL(request.url);
@@ -40,7 +28,7 @@ export async function loader({ request }: Route.LoaderArgs) {
     games,
     currentPage: page,
     totalPages: Math.ceil(total / GAMES_PER_PAGE),
-    role,
+    role: user.role,
   };
 }
 

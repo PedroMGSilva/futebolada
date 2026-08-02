@@ -1,33 +1,20 @@
 import type { Route } from "./+types/index";
-import { Link, redirect } from "react-router";
+import { Link } from "react-router";
 import { store } from "app/.server/db/operations";
 import {
   CalendarIcon,
   ClockIcon,
   UserGroupIcon,
 } from "@heroicons/react/16/solid";
-import { getSession } from "~/.server/session";
+import { requireUser } from "~/.server/auth/require";
 import { formatDate } from "~/utils";
 
-// eslint-disable-next-line
-export async function loader({ request, params }: Route.LoaderArgs) {
-  const session = await getSession(request.headers.get("Cookie"));
-
-  if (!session.has("userId")) {
-    return redirect("/login");
-  }
+export async function loader({ request }: Route.LoaderArgs) {
+  const user = await requireUser(request);
 
   const { games: upcomingGames } = await store.games.getUpcomingGames();
 
-  const user = await store.users.getUserById(session.get("userId")!);
-
-  if (!user) {
-    throw new Response("User not found", { status: 404 });
-  }
-
-  const role = user.role;
-
-  return { upcomingGames, role };
+  return { upcomingGames, role: user.role };
 }
 
 export default function Index({ loaderData }: Route.ComponentProps) {

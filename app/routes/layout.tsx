@@ -1,34 +1,11 @@
-import { Form, Link, Outlet, redirect } from "react-router";
-import { destroySession, getSession } from "~/.server/session";
-import type { Route } from "../../.react-router/types/app/+types/root";
+import { Form, Link, Outlet } from "react-router";
+import type { Route } from "./+types/layout";
+import { requireUserId } from "~/.server/auth/require";
 import { useEffect, useRef, useState } from "react";
 
 export async function loader({ request }: Route.LoaderArgs) {
-  const url = new URL(request.url);
-  const session = await getSession(request.headers.get("Cookie"));
-
-  if (!session.has("userId")) {
-    // Allow access to the login page even if not authenticated
-    if (url.pathname === "/login" || url.pathname === "/register") {
-      return null;
-    }
-
-    const headers = new Headers({
-      "Set-Cookie": await destroySession(session),
-    });
-
-    return redirect("/login", { headers });
-  }
+  await requireUserId(request);
 }
-
-export const action = async ({ request }: { request: Request }) => {
-  const session = await getSession(request.headers.get("Cookie"));
-  return redirect("/login", {
-    headers: {
-      "Set-Cookie": await destroySession(session),
-    },
-  });
-};
 
 export default function Layout() {
   const [open, setOpen] = useState(false);

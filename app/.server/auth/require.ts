@@ -3,6 +3,17 @@ import { destroySession, getSession } from "~/.server/session";
 import { store } from "~/.server/db/operations";
 import type { User } from "~/.server/db/operations/users";
 
+export async function requireUserId(request: Request): Promise<string> {
+  const session = await getSession(request.headers.get("Cookie"));
+  const userId = session.get("userId");
+
+  if (!userId) {
+    throw redirect("/login");
+  }
+
+  return userId;
+}
+
 export async function requireUser(request: Request): Promise<User> {
   const session = await getSession(request.headers.get("Cookie"));
   const userId = session.get("userId");

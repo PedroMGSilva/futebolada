@@ -1,43 +1,22 @@
-import type { Route } from "./+types/game-details";
+import type { Route } from "./+types/team-assignment";
 import { store } from "app/.server/db/operations";
 import { Form, Link, redirect } from "react-router";
-import { getSession } from "~/.server/session";
+import { requireAdmin } from "~/.server/auth/require";
 
 export async function loader({ request, params }: Route.LoaderArgs) {
-  const session = await getSession(request.headers.get("Cookie"));
-  const gameId = params.gameId;
+  await requireAdmin(request);
 
-  const userId = session.get("userId")!;
-  const user = (await store.users.getUserById(session.get("userId")!))!;
-
-  if (user.role !== "admin") {
-    throw new Response("You are not authorized to assign teams", {
-      status: 403,
-    });
-  }
-
-  const game = await store.games.getGameById(gameId);
+  const game = await store.games.getGameById(params.gameId);
 
   if (game === null) {
     throw new Response("Game not found", { status: 404 });
   }
 
-  return { game, userId };
+  return { game };
 }
 
 export async function action({ request, params }: Route.ActionArgs) {
-  const session = await getSession(request.headers.get("Cookie"));
-  const userId = session.get("userId")!;
-
-  if (!userId) return redirect("/login");
-
-  const user = (await store.users.getUserById(session.get("userId")!))!;
-
-  if (user.role !== "admin") {
-    throw new Response("You are not authorized to assign teams", {
-      status: 403,
-    });
-  }
+  await requireAdmin(request);
 
   const gameId = params.gameId;
   if (!gameId) throw new Response("Game ID required", { status: 400 });
@@ -54,6 +33,12 @@ export async function action({ request, params }: Route.ActionArgs) {
     await store.playersEnrolled.getPlayerEnrolledById(playerEnrolledId);
   if (!playerEnrolled) {
     throw new Response("Player not found", { status: 400 });
+  }
+
+  if (playerEnrolled.gameId !== gameId) {
+    throw new Response("That enrollment is not part of this game", {
+      status: 400,
+    });
   }
 
   if (

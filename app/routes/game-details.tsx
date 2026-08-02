@@ -1,7 +1,7 @@
 import type { Route } from "./+types/game-details";
 import { store } from "app/.server/db/operations";
 import { Form, Link, redirect } from "react-router";
-import { getSession } from "~/.server/session";
+import { requireUser } from "~/.server/auth/require";
 import {
   CalendarIcon,
   ClockIcon,
@@ -76,14 +76,8 @@ async function notifyEnrollmentChange(
 }
 
 export async function loader({ request, params }: Route.LoaderArgs) {
-  const session = await getSession(request.headers.get("Cookie"));
+  const user = await requireUser(request);
   const gameId = params.gameId;
-
-  const userId = session.get("userId")!;
-
-  if (!userId) return redirect("/login");
-
-  const user = (await store.users.getUserById(session.get("userId")!))!;
 
   const game = await store.games.getGameById(gameId);
   const guests = await store.guests.getAllGuests();
@@ -100,14 +94,17 @@ export async function loader({ request, params }: Route.LoaderArgs) {
     (guest) => !enrolledGuestIds.includes(guest.id),
   );
 
-  return { game, guests: availableGuests, userId, userRole: user.role };
+  return {
+    game,
+    guests: availableGuests,
+    userId: user.id,
+    userRole: user.role,
+  };
 }
 
 export async function action({ request, params }: Route.ActionArgs) {
-  const session = await getSession(request.headers.get("Cookie"));
-  const userId = session.get("userId")!;
-
-  if (!userId) return redirect("/login");
+  const user = await requireUser(request);
+  const userId = user.id;
 
   const gameId = params.gameId;
   if (!gameId) throw new Response("Game ID required", { status: 400 });
@@ -148,6 +145,12 @@ export async function action({ request, params }: Route.ActionArgs) {
       throw new Response("Player not found", { status: 400 });
     }
 
+    if (playerEnrolled.gameId !== gameId) {
+      throw new Response("That enrollment is not part of this game", {
+        status: 400,
+      });
+    }
+
     if (playerEnrolled.createdBy !== userId) {
       throw new Response("You are not authorized to unenroll this player", {
         status: 403,
@@ -158,10 +161,13 @@ export async function action({ request, params }: Route.ActionArgs) {
       (pe) => pe.id === playerEnrolledId,
     );
 
-    await store.games.unenrollFromGame({
-      gameId,
-      playerId: playerEnrolled.playerId,
+    const removed = await store.games.unenrollFromGame({
+      playerEnrolledId: playerEnrolled.id,
     });
+
+    if (!removed) {
+      throw new Response("That enrollment no longer exists", { status: 409 });
+    }
 
     notifyEnrollmentChange(
       gameId,
@@ -179,8 +185,6 @@ export async function action({ request, params }: Route.ActionArgs) {
     const player = await store.players.getByUserId(userId);
     if (!player) throw new Response("Player not found", { status: 400 });
 
-    const user = await store.users.getUserById(userId);
-
     const playerEnrolledId = uuidv4();
     await store.games.enrollInGame({
       playerEnrolledId,
@@ -193,7 +197,7 @@ export async function action({ request, params }: Route.ActionArgs) {
     notifyEnrollmentChange(
       gameId,
       isBruno(userId) ? BRUNO_ENROLL_TITLE : ENROLL_TITLE,
-      decorateName(user?.display_name || "Unknown", userId),
+      decorateName(user.display_name, userId),
     ).catch((err) => {
       console.error("Failed to send WhatsApp notification:", err);
     });
@@ -242,9 +246,10 @@ export async function action({ request, params }: Route.ActionArgs) {
       console.error("Failed to send WhatsApp notification:", err);
     });
   } else if (actionType === "declareWinner") {
-    const user = await store.users.getUserById(userId);
-    if (user?.role !== "admin") {
-      throw new Response("Forbidden", { status: 403 });
+    if (user.role !== "admin") {
+      throw new Response("You are not authorized to declare a winner", {
+        status: 403,
+      });
     }
 
     const winningTeam = formData.get("winningTeam");
