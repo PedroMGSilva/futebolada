@@ -9,7 +9,7 @@ import {
 import { store } from "app/.server/db/operations";
 import { getLocationName } from "~/.server/domain/game";
 import { v4 as uuidv4 } from "uuid";
-import { getSession } from "~/.server/session";
+import { requireAdmin } from "~/.server/auth/require";
 // @ts-expect-error // gmaps-expand-shorturl does not have types
 import { convertMapUrlToPoint } from "gmaps-expand-shorturl";
 import { retry } from "~/.server/utils";
@@ -19,19 +19,11 @@ type ActionData = {
 };
 
 export async function loader({ request }: Route.LoaderArgs) {
-  const session = await getSession(request.headers.get("Cookie"));
-
-  const user = (await store.users.getUserById(session.get("userId")!))!;
-
-  if (user.role !== "admin") {
-    throw new Response("You are not authorized to create games", {
-      status: 403,
-    });
-  }
+  await requireAdmin(request);
 }
 
 export const action: ActionFunction = async ({ request }) => {
-  const session = await getSession(request.headers.get("Cookie"));
+  const admin = await requireAdmin(request);
 
   const formData = await request.formData();
   const date = formData.get("date");
@@ -62,12 +54,20 @@ export const action: ActionFunction = async ({ request }) => {
   const maxPlayersNum = Number(maxPlayers);
   const priceNum = Number(price);
 
-  if (isNaN(maxPlayersNum) || maxPlayersNum < 1) {
-    return { error: "Max players must be a positive number" };
+  if (!Number.isInteger(maxPlayersNum) || maxPlayersNum < 1) {
+    return { error: "Max players must be a positive whole number" };
+  }
+
+  if (maxPlayersNum > 100) {
+    return { error: "Max players cannot be more than 100" };
   }
 
   if (isNaN(priceNum) || priceNum < 0) {
     return { error: "Price must be a non-negative number" };
+  }
+
+  if (priceNum > 10000) {
+    return { error: "Price cannot be more than 10000" };
   }
 
   // Convert price in dollars to cents (integer)
@@ -106,8 +106,8 @@ export const action: ActionFunction = async ({ request }) => {
     location: locationName || "Unknown Location",
     maxPlayers: maxPlayersNum,
     price: priceCents,
-    createdBy: session.get("userId")!,
-    updatedBy: session.get("userId")!,
+    createdBy: admin.id,
+    updatedBy: admin.id,
   });
 
   // After successful save, redirect to home or calendar page
