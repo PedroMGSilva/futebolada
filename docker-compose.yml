@@ -88,6 +88,7 @@ services:
       - "3001:3000"
     volumes:
       - waha_config:/app/config
+      - waha_sessions:/app/.sessions
     networks:
       - internal
 
@@ -96,6 +97,7 @@ volumes:
   caddy_data:
   caddy_config:
   waha_config:
+  waha_sessions:
 
 networks:
   web:
