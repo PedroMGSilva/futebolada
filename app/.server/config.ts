@@ -6,6 +6,13 @@ function getEnv(name: string, required = true): string {
   return value!;
 }
 
+function getEnvList(name: string): string[] {
+  return (process.env[name] ?? "")
+    .split(",")
+    .map((value) => value.trim().toLowerCase())
+    .filter(Boolean);
+}
+
 export const config = {
   db: {
     host: getEnv("DB_HOST"),
@@ -26,6 +33,9 @@ export const config = {
   },
   session: {
     secret: getEnv("SESSION_SECRET"),
+  },
+  registration: {
+    allowedEmails: getEnvList("ALLOWED_EMAILS"),
   },
   waha: {
     baseUrl: getEnv("WAHA_BASE_URL"),

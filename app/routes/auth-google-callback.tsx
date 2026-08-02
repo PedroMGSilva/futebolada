@@ -4,6 +4,7 @@ import { redirect } from "react-router";
 import { google } from "googleapis";
 import { config } from "~/.server/config";
 import { store } from "~/.server/db/operations";
+import { assertCanRegister } from "~/.server/auth/registration";
 import { v4 as uuidv4 } from "uuid";
 
 export async function loader({ request }: Route.LoaderArgs) {
@@ -42,6 +43,8 @@ export async function loader({ request }: Route.LoaderArgs) {
   );
 
   if (!user) {
+    assertCanRegister(userinfo.data.email);
+
     const userId = uuidv4();
     const playerId = uuidv4();
     // Create new user with info from Google

@@ -6,6 +6,7 @@ import {
   getFacebookUserProfile,
 } from "~/.server/auth/facebook";
 import { store } from "~/.server/db/operations";
+import { assertCanRegister } from "~/.server/auth/registration";
 import { v4 as uuidv4 } from "uuid";
 
 export async function loader({ request }: Route.LoaderArgs) {
@@ -40,6 +41,8 @@ export async function loader({ request }: Route.LoaderArgs) {
   );
 
   if (!user) {
+    assertCanRegister(userProfile.email);
+
     const userId = uuidv4();
     const playerId = uuidv4();
     const { user: createdUser } = await store.users.createUserAndPlayer({
