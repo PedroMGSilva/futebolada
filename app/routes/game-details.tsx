@@ -16,8 +16,27 @@ import type { Game } from "~/.server/db/operations/games";
 
 const BRUNO_USER_ID = "6b180f86-1c4f-437d-afa3-064654c18bb8";
 
+const RAINBOW_BAR = "❤️🧡💛💚💙💜🏳️‍🌈💜💙💚💛🧡❤️";
+
+const ENROLL_TITLE = "🚨 *Novo jogador inscrito!* 🚨";
+const UNENROLL_TITLE = "😢 *Desistência de última hora* 😢";
+
+const BRUNO_ENROLL_TITLE = `${RAINBOW_BAR}
+✨👑 *O REI ARCO-ÍRIS CHEGOU!* 👑✨
+💃🕺 _Preparem-se, meninas_ 🕺💃
+${RAINBOW_BAR}`;
+
+const BRUNO_UNENROLL_TITLE = `${RAINBOW_BAR}
+💔👑 *O REI ARCO-ÍRIS DESISTIU* 👑💔
+😭🌈 _O arco-íris ficou a preto e branco_ 🌈😭
+${RAINBOW_BAR}`;
+
+function isBruno(userId?: string): boolean {
+  return userId === BRUNO_USER_ID;
+}
+
 function decorateName(name: string, userId?: string): string {
-  return userId === BRUNO_USER_ID ? `🌈 *${name}* 🌈` : name;
+  return isBruno(userId) ? `🏳️‍🌈✨💅 *${name}* 💅✨👑` : name;
 }
 
 function playerName(playerEnrolled: Game["playersEnrolled"][number]): string {
@@ -146,7 +165,7 @@ export async function action({ request, params }: Route.ActionArgs) {
 
     notifyEnrollmentChange(
       gameId,
-      "😢 *Desistência de última hora* 😢",
+      isBruno(leaving?.player.user?.id) ? BRUNO_UNENROLL_TITLE : UNENROLL_TITLE,
       leaving ? playerName(leaving) : "Unknown",
     ).catch((err) => {
       console.error("Failed to send WhatsApp notification:", err);
@@ -173,7 +192,7 @@ export async function action({ request, params }: Route.ActionArgs) {
 
     notifyEnrollmentChange(
       gameId,
-      "🚨 *Novo jogador inscrito!* 🚨",
+      isBruno(userId) ? BRUNO_ENROLL_TITLE : ENROLL_TITLE,
       decorateName(user?.display_name || "Unknown", userId),
     ).catch((err) => {
       console.error("Failed to send WhatsApp notification:", err);
@@ -219,11 +238,7 @@ export async function action({ request, params }: Route.ActionArgs) {
       actorId: userId,
     });
 
-    notifyEnrollmentChange(
-      gameId,
-      "🚨 *Novo jogador inscrito!* 🚨",
-      guestName,
-    ).catch((err) => {
+    notifyEnrollmentChange(gameId, ENROLL_TITLE, guestName).catch((err) => {
       console.error("Failed to send WhatsApp notification:", err);
     });
   } else if (actionType === "declareWinner") {
