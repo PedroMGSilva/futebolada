@@ -97,14 +97,18 @@ export async function action({ request, params }: Route.ActionArgs) {
       playerId: playerEnrolled.playerId,
     });
 
-    sender.send(
-      config.waha.chatId,
-      `😢 *Desistência de última hora* 😢
+    sender
+      .send(
+        config.waha.chatId,
+        `😢 *Desistência de última hora* 😢
 
 *Jogo*: ${formatDate(game.date)}
 *Hora*: ${game.startTime.slice(0, 5)} - ${game.endTime.slice(0, 5)}
 *Inscritos*: ${game.playersEnrolled.length - 1} / ${game.maxPlayers}`,
-    );
+      )
+      .catch((err) => {
+        console.error("Failed to send WhatsApp notification:", err);
+      });
   } else if (actionType === "enroll") {
     const position = Number(formData.get("position"));
     if (!position || position < 1 || position > game.maxPlayers) {
@@ -123,14 +127,18 @@ export async function action({ request, params }: Route.ActionArgs) {
       actorId: userId,
     });
 
-    sender.send(
-      config.waha.chatId,
-      `🚨 *Novo jogador inscrito!* 🚨
+    sender
+      .send(
+        config.waha.chatId,
+        `🚨 *Novo jogador inscrito!* 🚨
 
 *Jogo*: ${formatDate(game.date)}
 *Hora*: ${game.startTime.slice(0, 5)} - ${game.endTime.slice(0, 5)}
 *Inscritos*: ${game.playersEnrolled.length + 1} / ${game.maxPlayers}`,
-    );
+      )
+      .catch((err) => {
+        console.error("Failed to send WhatsApp notification:", err);
+      });
   } else if (actionType === "enrollGuest") {
     const guestName = formData.get("guestName");
     const position = Number(formData.get("position"));
@@ -172,14 +180,18 @@ export async function action({ request, params }: Route.ActionArgs) {
       actorId: userId,
     });
 
-    sender.send(
-      config.waha.chatId,
-      `🚨 *Novo jogador inscrito!* 🚨
+    sender
+      .send(
+        config.waha.chatId,
+        `🚨 *Novo jogador inscrito!* 🚨
 
 *Jogo*: ${formatDate(game.date)}
 *Hora*: ${game.startTime.slice(0, 5)} - ${game.endTime.slice(0, 5)}
 *Inscritos*: ${game.playersEnrolled.length + 1} / ${game.maxPlayers}`,
-    );
+      )
+      .catch((err) => {
+        console.error("Failed to send WhatsApp notification:", err);
+      });
   } else if (actionType === "declareWinner") {
     const user = await store.users.getUserById(userId);
     if (user?.role !== "admin") {
