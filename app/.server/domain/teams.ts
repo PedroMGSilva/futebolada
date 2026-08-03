@@ -38,8 +38,8 @@ export function formatTeamsMessage(game: Game): string | null {
   }
 
   for (const [label, names] of [
-    ["⚫ *PRETOS*", black],
     ["⚪ *BRANCOS*", white],
+    ["⚫ *PRETOS*", black],
   ] as const) {
     lines.push("", label);
     lines.push(

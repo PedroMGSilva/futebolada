@@ -1,9 +1,8 @@
-import { sendSafeMessage } from "./client";
+import { sendSafeMessage, type OutgoingMessage } from "./client";
 import { randomDelay, wait } from "~/.server/utils";
 
 type QueueItem = {
-  chatId: string;
-  text: string;
+  message: OutgoingMessage;
   resolve: () => void;
   reject: (err: unknown) => void;
 };
@@ -18,8 +17,20 @@ class RateLimitedSender {
   }
 
   async send(chatId: string, text: string): Promise<void> {
+    return this.enqueue({ kind: "text", chatId, text });
+  }
+
+  async sendImage(
+    chatId: string,
+    jpeg: Buffer,
+    caption: string,
+  ): Promise<void> {
+    return this.enqueue({ kind: "image", chatId, jpeg, caption });
+  }
+
+  private async enqueue(message: OutgoingMessage): Promise<void> {
     return new Promise((resolve, reject) => {
-      this.queue.push({ chatId, text, resolve, reject });
+      this.queue.push({ message, resolve, reject });
       this.process();
     });
   }
@@ -29,10 +40,10 @@ class RateLimitedSender {
     this.processing = true;
 
     while (this.queue.length > 0) {
-      const { chatId, text, resolve, reject } = this.queue.shift()!;
+      const { message, resolve, reject } = this.queue.shift()!;
 
       try {
-        await sendSafeMessage(chatId, text);
+        await sendSafeMessage(message);
         resolve();
       } catch (err) {
         reject(err);

@@ -3,6 +3,7 @@ import { store } from "~/.server/db/operations";
 import { Form, Link, redirect, useActionData } from "react-router";
 import { requireAdmin } from "~/.server/auth/require";
 import { formatTeamsMessage } from "~/.server/domain/teams";
+import { renderTeamsImage } from "~/.server/domain/teams-image";
 import { config } from "~/.server/config";
 import sender from "~/.server/waha/rateLimitedClient";
 
@@ -37,8 +38,19 @@ export async function action({ request, params }: Route.ActionArgs) {
       return { error: "Assign at least one player to a team first." };
     }
 
+    let image: Buffer | null = null;
     try {
-      await sender.send(config.waha.chatId, message);
+      image = renderTeamsImage(game);
+    } catch (err) {
+      console.error("Could not render the teams image, sending text:", err);
+    }
+
+    try {
+      if (image) {
+        await sender.sendImage(config.waha.chatId, image, message);
+      } else {
+        await sender.send(config.waha.chatId, message);
+      }
       return { shared: true };
     } catch (err) {
       console.error("Failed to share teams:", err);

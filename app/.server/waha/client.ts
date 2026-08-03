@@ -1,6 +1,8 @@
 import { config } from "~/.server/config";
 import { randomDelay, wait } from "~/.server/utils";
 
+type SendResult = { key?: { id?: string } };
+
 interface WahaClientOptions {
   baseUrl: string; // e.g. "http://localhost:3000/api"
   apiKey: string; // your X-Api-Key
@@ -64,8 +66,27 @@ class WahaClient {
   /**
    * Send a text message
    */
-  async sendMessage(chatId: string, text: string): Promise<{ id: string }> {
-    return this.request<{ id: string }>("/sendText", { chatId, text });
+  async sendMessage(chatId: string, text: string): Promise<SendResult> {
+    return this.request<SendResult>("/sendText", { chatId, text });
+  }
+
+  /**
+   * Send a JPEG image, optionally with a caption
+   */
+  async sendImage(
+    chatId: string,
+    jpeg: Buffer,
+    caption: string,
+  ): Promise<SendResult> {
+    return this.request<SendResult>("/sendImage", {
+      chatId,
+      caption,
+      file: {
+        mimetype: "image/jpeg",
+        filename: "equipas.jpg",
+        data: jpeg.toString("base64"),
+      },
+    });
   }
 }
 
@@ -75,10 +96,13 @@ const client = new WahaClient({
   session: "default",
 });
 
-export async function sendSafeMessage(
-  chatId: string,
-  text: string,
-): Promise<void> {
+export type OutgoingMessage =
+  | { kind: "text"; chatId: string; text: string }
+  | { kind: "image"; chatId: string; jpeg: Buffer; caption: string };
+
+export async function sendSafeMessage(message: OutgoingMessage): Promise<void> {
+  const { chatId } = message;
+
   // Step 1: Mark as seen
   await client.sendSeen(chatId);
 
@@ -92,6 +116,10 @@ export async function sendSafeMessage(
   await client.stopTyping(chatId);
 
   // Step 5: Send the message
-  const message = await client.sendMessage(chatId, text);
-  console.log("✅ Message sent:", message.id);
+  const sent =
+    message.kind === "text"
+      ? await client.sendMessage(chatId, message.text)
+      : await client.sendImage(chatId, message.jpeg, message.caption);
+
+  console.log(`✅ ${message.kind} sent:`, sent.key?.id ?? "(no id returned)");
 }
