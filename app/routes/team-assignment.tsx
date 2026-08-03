@@ -1,6 +1,12 @@
 import type { Route } from "./+types/team-assignment";
 import { store } from "~/.server/db/operations";
-import { Form, Link, redirect, useActionData } from "react-router";
+import {
+  Form,
+  Link,
+  redirect,
+  useActionData,
+  useNavigation,
+} from "react-router";
 import { requireAdmin } from "~/.server/auth/require";
 import { formatTeamsMessage } from "~/.server/domain/teams";
 import { renderTeamsImage } from "~/.server/domain/teams-image";
@@ -18,7 +24,7 @@ export async function loader({ request, params }: Route.LoaderArgs) {
     throw new Response("Game not found", { status: 404 });
   }
 
-  return { game, teamsMessage: formatTeamsMessage(game) };
+  return { game };
 }
 
 export async function action({ request, params }: Route.ActionArgs) {
@@ -96,8 +102,9 @@ export async function action({ request, params }: Route.ActionArgs) {
 }
 
 export default function GameDetails({ loaderData }: Route.ComponentProps) {
-  const { game, teamsMessage } = loaderData;
+  const { game } = loaderData;
   const actionData = useActionData<ActionData>();
+  const navigation = useNavigation();
 
   const unassignedPlayersEnrolled = game.playersEnrolled.filter((p) => !p.team);
 
@@ -108,18 +115,48 @@ export default function GameDetails({ loaderData }: Route.ComponentProps) {
     (p) => p.team === "black",
   );
 
+  const hasTeams =
+    whiteTeamPlayersEnrolled.length > 0 || blackTeamPlayersEnrolled.length > 0;
+  const isSharing =
+    navigation.state === "submitting" &&
+    navigation.formData?.get("_action") === "shareTeams";
+
   return (
     <main className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 bg-gray-50 dark:bg-gray-900 min-h-screen">
       <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-8">
         <h1 className="text-3xl font-bold text-gray-900 dark:text-white text-center md:text-left mb-4 md:mb-0">
           Team Assignment
         </h1>
-        <Link
-          to={`/games/${game.id}`}
-          className="inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg shadow-sm hover:bg-gray-50 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700 transition-colors"
-        >
-          &larr; Back to Game
-        </Link>
+        <div className="flex items-center gap-4">
+          {actionData?.error && (
+            <span className="text-sm font-medium text-red-600">
+              {actionData.error}
+            </span>
+          )}
+          <Form method="post">
+            <input type="hidden" name="_action" value="shareTeams" />
+            <button
+              type="submit"
+              disabled={!hasTeams || isSharing}
+              title={
+                hasTeams ? undefined : "Assign a player to a team to share it"
+              }
+              className="inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-white bg-green-600 border border-transparent rounded-lg shadow-sm hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+            >
+              {isSharing
+                ? "Sending…"
+                : actionData?.shared
+                  ? "Sent to WhatsApp"
+                  : "Send to WhatsApp"}
+            </button>
+          </Form>
+          <Link
+            to={`/games/${game.id}`}
+            className="inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg shadow-sm hover:bg-gray-50 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700 transition-colors"
+          >
+            &larr; Back to Game
+          </Link>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -233,43 +270,6 @@ export default function GameDetails({ loaderData }: Route.ComponentProps) {
             ))}
           </ul>
         </div>
-      </div>
-
-      <div className="mt-8 bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
-        <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
-          Share to WhatsApp
-        </h3>
-
-        {teamsMessage ? (
-          <>
-            <pre className="text-sm bg-gray-100 dark:bg-gray-900 dark:text-gray-200 rounded p-4 overflow-x-auto">
-              {teamsMessage}
-            </pre>
-            <Form method="post" className="mt-4 flex items-center gap-4">
-              <input type="hidden" name="_action" value="shareTeams" />
-              <button
-                type="submit"
-                className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg shadow-sm hover:bg-green-700 transition-colors"
-              >
-                Send to the group
-              </button>
-              {actionData?.shared && (
-                <span className="text-sm font-medium text-green-700 dark:text-green-400">
-                  Sent
-                </span>
-              )}
-              {actionData?.error && (
-                <span className="text-sm font-medium text-red-600">
-                  {actionData.error}
-                </span>
-              )}
-            </Form>
-          </>
-        ) : (
-          <p className="text-gray-500 dark:text-gray-400">
-            Assign at least one player to a team to share the line-up.
-          </p>
-        )}
       </div>
     </main>
   );
