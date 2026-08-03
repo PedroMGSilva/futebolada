@@ -1,9 +1,9 @@
 import type { Game } from "~/.server/db/operations/games";
 import { formatDate } from "~/utils";
 
-const COLUMN_WIDTH = 12;
+type PlayerEnrolled = Game["playersEnrolled"][number];
 
-function playerLabel(playerEnrolled: Game["playersEnrolled"][number]): string {
+function playerLabel(playerEnrolled: PlayerEnrolled): string {
   return (
     playerEnrolled.player.user?.display_name ||
     playerEnrolled.player.guest?.name ||
@@ -11,25 +11,17 @@ function playerLabel(playerEnrolled: Game["playersEnrolled"][number]): string {
   );
 }
 
-function fit(name: string): string {
-  return name.length <= COLUMN_WIDTH
-    ? name
-    : `${name.slice(0, COLUMN_WIDTH - 1)}…`;
+function roster(game: Game, team: "black" | "white"): string[] {
+  return game.playersEnrolled
+    .filter((playerEnrolled) => playerEnrolled.team === team)
+    .map(playerLabel);
 }
 
 export function formatTeamsMessage(game: Game): string | null {
-  const named = (team: "black" | "white") =>
-    game.playersEnrolled.filter((pe) => pe.team === team).map(playerLabel);
-
-  const black = named("black");
-  const white = named("white");
+  const black = roster(game, "black");
+  const white = roster(game, "white");
 
   if (black.length === 0 && white.length === 0) return null;
-
-  const rows = Math.max(black.length, white.length);
-  const table = Array.from({ length: rows }, (_, i) =>
-    `${fit(black[i] ?? "").padEnd(COLUMN_WIDTH)}  ${fit(white[i] ?? "")}`.trimEnd(),
-  );
 
   const lines = [
     "⚽ *Equipas*",
@@ -45,18 +37,22 @@ export function formatTeamsMessage(game: Game): string | null {
     );
   }
 
-  lines.push(
-    "",
-    "```",
-    `${"PRETOS".padEnd(COLUMN_WIDTH)}  BRANCOS`,
-    "-".repeat(COLUMN_WIDTH * 2 + 2),
-    ...table,
-    "```",
-  );
+  for (const [label, names] of [
+    ["⚫ *PRETOS*", black],
+    ["⚪ *BRANCOS*", white],
+  ] as const) {
+    lines.push("", label);
+    lines.push(
+      ...(names.length > 0 ? names.map((n) => `• ${n}`) : ["_(vazio)_"]),
+    );
+  }
 
-  const unassigned = game.playersEnrolled.filter((pe) => !pe.team);
+  const unassigned = game.playersEnrolled
+    .filter((playerEnrolled) => !playerEnrolled.team)
+    .map(playerLabel);
+
   if (unassigned.length > 0) {
-    lines.push("", `_Sem equipa: ${unassigned.map(playerLabel).join(", ")}_`);
+    lines.push("", `_Sem equipa: ${unassigned.join(", ")}_`);
   }
 
   return lines.join("\n");
