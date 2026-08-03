@@ -30,9 +30,8 @@ class WahaClient {
         accept: "application/json",
       },
       body: JSON.stringify({ ...body, session: this.session }),
+      signal: AbortSignal.timeout(15000),
     });
-
-    console.log("body", JSON.stringify({ ...body, session: this.session }));
 
     if (!res.ok) {
       throw new Error(`WAHA request failed: ${res.status} ${res.statusText}`);
