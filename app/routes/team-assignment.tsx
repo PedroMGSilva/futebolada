@@ -141,7 +141,7 @@ export default function GameDetails({ loaderData }: Route.ComponentProps) {
               title={
                 hasTeams ? undefined : "Assign a player to a team to share it"
               }
-              className="inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-white bg-green-600 border border-transparent rounded-lg shadow-sm hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+              className="inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-white bg-green-600 border border-transparent rounded-lg shadow-sm hover:bg-green-700 cursor-pointer disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
             >
               {isSharing
                 ? "Sending…"
