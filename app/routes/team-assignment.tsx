@@ -1,7 +1,13 @@
 import type { Route } from "./+types/team-assignment";
 import { store } from "~/.server/db/operations";
-import { Form, Link, redirect } from "react-router";
+import { Form, Link, redirect, useActionData } from "react-router";
 import { requireAdmin } from "~/.server/auth/require";
+import { formatTeamsMessage } from "~/.server/domain/teams";
+import { renderTeamsImage } from "~/.server/domain/teams-image";
+import { config } from "~/.server/config";
+import sender from "~/.server/waha/rateLimitedClient";
+
+type ActionData = { shared?: boolean; error?: string };
 
 export async function loader({ request, params }: Route.LoaderArgs) {
   await requireAdmin(request);
@@ -12,7 +18,7 @@ export async function loader({ request, params }: Route.LoaderArgs) {
     throw new Response("Game not found", { status: 404 });
   }
 
-  return { game };
+  return { game, teamsMessage: formatTeamsMessage(game) };
 }
 
 export async function action({ request, params }: Route.ActionArgs) {
@@ -22,6 +28,35 @@ export async function action({ request, params }: Route.ActionArgs) {
   if (!gameId) throw new Response("Game ID required", { status: 400 });
 
   const formData = await request.formData();
+
+  if (formData.get("_action") === "shareTeams") {
+    const game = await store.games.getGameById(gameId);
+    if (!game) throw new Response("Game not found", { status: 404 });
+
+    const message = formatTeamsMessage(game);
+    if (!message) {
+      return { error: "Assign at least one player to a team first." };
+    }
+
+    let image: Buffer | null = null;
+    try {
+      image = renderTeamsImage(game);
+    } catch (err) {
+      console.error("Could not render the teams image, sending text:", err);
+    }
+
+    try {
+      if (image) {
+        await sender.sendImage(config.waha.chatId, image, message);
+      } else {
+        await sender.send(config.waha.chatId, message);
+      }
+      return { shared: true };
+    } catch (err) {
+      console.error("Failed to share teams:", err);
+      return { error: "Could not reach WhatsApp. Nothing was sent." };
+    }
+  }
 
   const playerEnrolledId = formData.get("playerEnrolledId");
   const team = formData.get("team");
@@ -61,7 +96,8 @@ export async function action({ request, params }: Route.ActionArgs) {
 }
 
 export default function GameDetails({ loaderData }: Route.ComponentProps) {
-  const { game } = loaderData;
+  const { game, teamsMessage } = loaderData;
+  const actionData = useActionData<ActionData>();
 
   const unassignedPlayersEnrolled = game.playersEnrolled.filter((p) => !p.team);
 
@@ -197,6 +233,43 @@ export default function GameDetails({ loaderData }: Route.ComponentProps) {
             ))}
           </ul>
         </div>
+      </div>
+
+      <div className="mt-8 bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
+        <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
+          Share to WhatsApp
+        </h3>
+
+        {teamsMessage ? (
+          <>
+            <pre className="text-sm bg-gray-100 dark:bg-gray-900 dark:text-gray-200 rounded p-4 overflow-x-auto">
+              {teamsMessage}
+            </pre>
+            <Form method="post" className="mt-4 flex items-center gap-4">
+              <input type="hidden" name="_action" value="shareTeams" />
+              <button
+                type="submit"
+                className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg shadow-sm hover:bg-green-700 transition-colors"
+              >
+                Send to the group
+              </button>
+              {actionData?.shared && (
+                <span className="text-sm font-medium text-green-700 dark:text-green-400">
+                  Sent
+                </span>
+              )}
+              {actionData?.error && (
+                <span className="text-sm font-medium text-red-600">
+                  {actionData.error}
+                </span>
+              )}
+            </Form>
+          </>
+        ) : (
+          <p className="text-gray-500 dark:text-gray-400">
+            Assign at least one player to a team to share the line-up.
+          </p>
+        )}
       </div>
     </main>
   );
