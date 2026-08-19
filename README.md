@@ -27,10 +27,11 @@ Locally, `npm run dev` runs **on your machine**, outside Docker, and reaches
 Postgres and WAHA through published ports on `localhost`. That is why the local
 `.env` uses `localhost` where the server uses Docker service names:
 
-| variable        | local                       | server                 |
-| --------------- | --------------------------- | ---------------------- |
-| `DB_HOST`       | `localhost`                 | `db`                   |
-| `WAHA_BASE_URL` | `http://localhost:3001/api` | `http://waha:3000/api` |
+| variable        | local                       | server                   |
+| --------------- | --------------------------- | ------------------------ |
+| `DB_HOST`       | `localhost`                 | `db`                     |
+| `WAHA_BASE_URL` | `http://localhost:3001/api` | `http://waha:3000/api`   |
+| `APP_BASE_URL`  | `http://localhost:3000`     | `https://futebolada.org` |
 
 Other useful commands:
 
@@ -47,6 +48,7 @@ them with empty values.
 
 | variable                                                              | what it is                                                         |
 | --------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| `APP_BASE_URL`                                                        | public address of the site, used to link to games from WhatsApp    |
 | `DB_HOST` `DB_PORT` `DB_USER` `DB_PASSWORD` `DB_NAME`                 | Postgres connection                                                |
 | `GOOGLE_CLIENT_ID` `GOOGLE_CLIENT_SECRET` `GOOGLE_REDIRECT_URI`       | Google login                                                       |
 | `FACEBOOK_CLIENT_ID` `FACEBOOK_CLIENT_SECRET` `FACEBOOK_REDIRECT_URI` | Facebook login                                                     |

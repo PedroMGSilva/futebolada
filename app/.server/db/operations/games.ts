@@ -366,3 +366,25 @@ export async function setWinningTeam(
     [input.winningTeam, input.actorId, input.gameId],
   );
 }
+
+interface DeleteUpcomingGameInput {
+  gameId: string;
+}
+
+export async function deleteUpcomingGame(
+  input: DeleteUpcomingGameInput,
+): Promise<boolean> {
+  const now = new Date();
+  const currentDate = now.toISOString().split("T")[0];
+  const currentTime = now.toTimeString().split(" ")[0];
+
+  const res = await pool.query(
+    `
+    DELETE FROM games
+    WHERE id = $1 AND (date > $2 OR (date = $2 AND end_time >= $3))
+  `,
+    [input.gameId, currentDate, currentTime],
+  );
+
+  return (res.rowCount ?? 0) > 0;
+}

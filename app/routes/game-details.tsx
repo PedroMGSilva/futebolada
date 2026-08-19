@@ -1,6 +1,6 @@
 import type { Route } from "./+types/game-details";
 import { store } from "~/.server/db/operations";
-import { Form, Link, redirect } from "react-router";
+import { Form, Link, redirect, useNavigation } from "react-router";
 import { requireUser } from "~/.server/auth/require";
 import {
   CalendarIcon,
@@ -21,6 +21,7 @@ const RAINBOW_BAR = "❤️🧡💛💚💙💜🏳️‍🌈💜💙💚💛�
 
 const ENROLL_TITLE = "🚨 *Novo jogador inscrito!* 🚨";
 const UNENROLL_TITLE = "😢 *Desistência de última hora* 😢";
+const DELETE_TITLE = "❌ *Jogo cancelado* ❌";
 
 const BRUNO_ENROLL_TITLE = `${RAINBOW_BAR}
 ✨👑 *O REI ARCO-ÍRIS CHEGOU!* 👑✨
@@ -73,6 +74,23 @@ async function notifyEnrollmentChange(
 *Inscritos*: ${game.playersEnrolled.length} / ${game.maxPlayers}${
       roster ? `\n\n${roster}` : ""
     }`,
+  );
+}
+
+async function notifyGameDeleted(game: Game): Promise<void> {
+  const roster = game.playersEnrolled
+    .map(
+      (playerEnrolled, index) => `${index + 1}. ${playerName(playerEnrolled)}`,
+    )
+    .join("\n");
+
+  await sender.send(
+    config.waha.chatId,
+    `${DELETE_TITLE}
+
+*Jogo*: ${formatDate(game.date)}
+*Hora*: ${game.startTime.slice(0, 5)} - ${game.endTime.slice(0, 5)}
+*Local*: ${game.location}${roster ? `\n\n*Estavam inscritos*:\n${roster}` : ""}`,
   );
 }
 
@@ -268,6 +286,30 @@ export async function action({ request, params }: Route.ActionArgs) {
       winningTeam: winningTeam,
       actorId: userId,
     });
+  } else if (actionType === "deleteGame") {
+    if (user.role !== "admin") {
+      throw new Response("You are not authorized to delete a game", {
+        status: 403,
+      });
+    }
+
+    if (isGameOver) {
+      throw new Response("Cannot delete a game that has already happened", {
+        status: 403,
+      });
+    }
+
+    const deleted = await store.games.deleteUpcomingGame({ gameId });
+
+    if (!deleted) {
+      throw new Response("That game no longer exists", { status: 409 });
+    }
+
+    notifyGameDeleted(game).catch((err) => {
+      console.error("Failed to send WhatsApp notification:", err);
+    });
+
+    return redirect("/");
   }
 
   return redirect(`/games/${gameId}`);
@@ -277,6 +319,11 @@ export default function GameDetails({ loaderData }: Route.ComponentProps) {
   const { game, userId, guests, userRole } = loaderData;
   const [guestInputSlot, setGuestInputSlot] = useState<number | null>(null);
   const [guestName, setGuestName] = useState("");
+  const navigation = useNavigation();
+
+  const isDeleting =
+    navigation.state === "submitting" &&
+    navigation.formData?.get("_action") === "deleteGame";
 
   const isEnrolled = game.playersEnrolled.some(
     (p) => p.player.user?.id === userId,
@@ -298,12 +345,35 @@ export default function GameDetails({ loaderData }: Route.ComponentProps) {
         </h1>
         <div className="flex items-center gap-4">
           {userRole === "admin" && !isGameOver && (
-            <Link
-              to={`/games/${game.id}/team-assignment`}
-              className="inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg shadow-sm hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 transition-colors"
-            >
-              Team Assignment
-            </Link>
+            <>
+              <Link
+                to={`/games/${game.id}/team-assignment`}
+                className="inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg shadow-sm hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 transition-colors"
+              >
+                Team Assignment
+              </Link>
+              <Form
+                method="post"
+                onSubmit={(event) => {
+                  if (
+                    !confirm(
+                      `Delete the game on ${formatDate(game.date)}? This also removes the ${game.playersEnrolled.length} enrolled player(s) and cannot be undone.`,
+                    )
+                  ) {
+                    event.preventDefault();
+                  }
+                }}
+              >
+                <input type="hidden" name="_action" value="deleteGame" />
+                <button
+                  type="submit"
+                  disabled={isDeleting}
+                  className="inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-lg shadow-sm hover:bg-red-700 cursor-pointer disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+                >
+                  {isDeleting ? "Deleting…" : "Delete Game"}
+                </button>
+              </Form>
+            </>
           )}
           <Link
             to={`/`}

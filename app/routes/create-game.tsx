@@ -11,10 +11,40 @@ import { getLocationName } from "~/.server/domain/game";
 import { v4 as uuidv4 } from "uuid";
 import { requireAdmin } from "~/.server/auth/require";
 import { coordinatesFromGoogleMapsUrl } from "~/.server/domain/maps";
+import { formatDate } from "~/utils";
+import { config } from "~/.server/config";
+import sender from "~/.server/waha/rateLimitedClient";
 
 type ActionData = {
   error?: string;
 };
+
+const CREATE_TITLE = "⚽ *Novo jogo marcado!* ⚽";
+
+interface NotifyGameCreatedInput {
+  id: string;
+  date: string;
+  startTime: string;
+  endTime: string;
+  location: string;
+  price: number;
+  maxPlayers: number;
+}
+
+async function notifyGameCreated(input: NotifyGameCreatedInput): Promise<void> {
+  await sender.send(
+    config.waha.chatId,
+    `${CREATE_TITLE}
+
+*Jogo*: ${formatDate(input.date)}
+*Hora*: ${input.startTime.slice(0, 5)} - ${input.endTime.slice(0, 5)}
+*Local*: ${input.location}
+*Preço*: ${(input.price / 100).toFixed(2)}€
+*Vagas*: ${input.maxPlayers}
+
+Inscrevam-se: ${config.app.baseUrl}/games/${input.id}`,
+  );
+}
 
 export async function loader({ request }: Route.LoaderArgs) {
   await requireAdmin(request);
@@ -82,6 +112,7 @@ export const action: ActionFunction = async ({ request }) => {
     : null;
 
   const id = uuidv4();
+  const location = locationName || "Unknown Location";
 
   await store.games.createGame({
     id,
@@ -90,11 +121,23 @@ export const action: ActionFunction = async ({ request }) => {
     endTime,
     latitude: coordinates?.latitude ?? 0,
     longitude: coordinates?.longitude ?? 0,
-    location: locationName || "Unknown Location",
+    location,
     maxPlayers: maxPlayersNum,
     price: priceCents,
     createdBy: admin.id,
     updatedBy: admin.id,
+  });
+
+  notifyGameCreated({
+    id,
+    date,
+    startTime,
+    endTime,
+    location,
+    price: priceCents,
+    maxPlayers: maxPlayersNum,
+  }).catch((err) => {
+    console.error("Failed to send WhatsApp notification:", err);
   });
 
   return redirect(`/games/${id}`);
