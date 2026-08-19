@@ -14,6 +14,9 @@ function getEnvList(name: string): string[] {
 }
 
 export const config = {
+  app: {
+    baseUrl: getEnv("APP_BASE_URL").replace(/\/+$/, ""),
+  },
   db: {
     host: getEnv("DB_HOST"),
     port: parseInt(getEnv("DB_PORT", false) || "5432"),

@@ -10,6 +10,7 @@ services:
         condition: service_started
     restart: always
     environment:
+      APP_BASE_URL: ${APP_BASE_URL}
       DB_HOST: db
       DB_PORT: ${DB_PORT}
       DB_USER: ${DB_USER}

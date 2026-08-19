@@ -22,6 +22,7 @@ type ActionData = {
 const CREATE_TITLE = "⚽ *Novo jogo marcado!* ⚽";
 
 interface NotifyGameCreatedInput {
+  id: string;
   date: string;
   startTime: string;
   endTime: string;
@@ -41,7 +42,7 @@ async function notifyGameCreated(input: NotifyGameCreatedInput): Promise<void> {
 *Preço*: ${(input.price / 100).toFixed(2)}€
 *Vagas*: ${input.maxPlayers}
 
-Inscrevam-se!`,
+Inscrevam-se: ${config.app.baseUrl}/games/${input.id}`,
   );
 }
 
@@ -128,6 +129,7 @@ export const action: ActionFunction = async ({ request }) => {
   });
 
   notifyGameCreated({
+    id,
     date,
     startTime,
     endTime,
